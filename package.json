@@ -1,0 +1,56 @@
+{
+  "name": "b-chess-desktop",
+  "productName": "B-Chess Desktop",
+  "version": "2.1.0",
+  "description": "B-Chess en el escritorio: ajedrez contra la IA o P2P, compatible con el APK. Se actualiza solo vía GitHub Releases.",
+  "author": "Elal Chico",
+  "license": "MIT",
+  "main": "electron-main.js",
+  "build": {
+    "appId": "com.bchess.desktop",
+    "productName": "B-Chess Desktop",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "ElalChico",
+        "repo": "B-Chess-Desktop"
+      }
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "icono.ico",
+      "artifactName": "B-Chess-Desktop-Setup-${version}.exe",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "B-Chess Desktop"
+    }
+  },
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win --x64 --publish never",
+    "release": "electron-builder --win --x64 --publish always"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0"
+  }
+}
