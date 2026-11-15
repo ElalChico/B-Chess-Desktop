@@ -41,6 +41,27 @@ npm run release              # build + publica release en GitHub (requiere GH_TO
 
 Los mismos assets (piezas, sonidos, temas), el motor, y el protocolo P2P (`v:2`), para partidas entre PC y móvil sin diferencias.
 
+## Conexión: modos disponibles
+
+| Modo | Estado | Descripción |
+|------|--------|-------------|
+| **P2P (Internet)** | ✅ Funciona | Código de 6 caracteres, WebRTC + Firebase signaling. Compatible PC↔PC y PC↔APK. |
+| **Bluetooth** | 🚧 Planeado | Requiere app nativa (Tauri/Electron) con Bluetooth Classic/SPP. Web Bluetooth API solo soporta BLE, no SPP clásico. |
+| **LAN (IP Local)** | 🚧 Planeado | WebSocket servidor en Node/Electron (`ws://IP:5891`). Sin Internet, solo LAN. |
+
+> **Nota**: Hoy solo **P2P (Internet)** está implementado y funcional. Bluetooth (SPP clásico) y LAN (WebSocket local) requieren app nativa (Tauri/Electron) y están planificados.
+
+## Motores IA disponibles
+
+| Motor | Tipo | Rango Elo | Control | Comentario |
+|-------|------|-----------|---------|------------|
+| **Stockfish** (incluido) | AB + NNUE | ~400 – 3190 | `UCI_LimitStrength` + Skill 0–20 | Estándar, cubre todo el rango. |
+| **Maia Chess** | Red neuronal (human-like) | 1100–1900 (brackets) | Modelo fijo por Elo | Juega "como humano" en brackets 1100–1900. |
+| **Ethereal / Koivisto / Seer** | Híbrido AB+NNUE | Configurable | `UCI_LimitStrength` | Open source, fuerte, ligero. |
+| **LCZero (Leela)** | MCTS + NNUE | Muy alto | GPU/WASM SIMD | Muy fuerte, requiere GPU/WASM SIMD. |
+
+> **Recomendación**: **Stockfish solo ya cubre todo el rango 400–3190 Elo** con `UCI_LimitStrength + Skill Level 0–20`. Maia es opcional si buscas "juego humano" en rangos 1100–1900.
+
 ## Licencia
 
 MIT — Hecho por Elal Chico.
