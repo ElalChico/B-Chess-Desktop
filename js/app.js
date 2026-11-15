@@ -6,9 +6,35 @@
 (function () {
   'use strict';
 
-  // ================= Estado global =================
+  // Referencias originales (P2P y LAN)
+  var _p2pNet = window.BCHESS_NET;
+  var _lanNet = window.BCHESS_LAN;
+  var currentTransport = 'p2p'; // 'p2p' | 'lan'
+
+  // Activa un transporte swappando la implementación global BCHESS_NET
+  function applyTransport(mode) {
+    currentTransport = mode;
+    S.transport = mode;
+    window.BCHESS_NET = (mode === 'lan' && _lanNet) ? _lanNet : _p2pNet;
+    var p2pSec = document.getElementById('online-p2p');
+    var lanSec = document.getElementById('online-lan');
+    if (p2pSec) p2pSec.classList.toggle('hidden', mode !== 'p2p');
+    if (lanSec) lanSec.classList.toggle('hidden', mode !== 'lan');
+
+    var p2pBtn = document.getElementById('conn-mode-p2p');
+    var lanBtn = document.getElementById('conn-mode-lan');
+    if (p2pBtn) p2pBtn.classList.toggle('conn-mode-active', mode === 'p2p');
+    if (lanBtn) lanBtn.classList.toggle('conn-mode-active', mode === 'lan');
+
+    // Estado en Home (opacidad del indicador)
+    var homeDot = document.querySelector('#home-conn-state .conn-dot');
+    if (homeDot) homeDot.classList.toggle('on', mode === 'p2p' && window.BCHESS_NET && window.BCHESS_NET.isConnected && window.BCHESS_NET.isConnected());
+  }
+
+  // ================= Estado global =================  
   var S = {
     hasBoard: false,
+    transport: 'p2p',
     settings: {
       name: 'Jugador', pieceSet: 'cburnett', boardTheme: 'lichess',
       sound: true, volume: 80, engine: 'stockfish', difficulty: 5,
@@ -84,9 +110,8 @@
     if (name === 'home') updateHomeWelcome();
     if (name === 'profile' && window.BCHESS_STATS) BCHESS_STATS.onProfileShown();
     if (name === 'online') {
-      // Usuario viene del perfil, no hace falta input
-      var profile = BCHESS_PROFILE.getProfile();
-      // No hay input online-name ahora
+      // Restaurar transporte elegido
+      applyTransport(S.transport || 'p2p');
     }
     updateRailActive();
     try { window.scrollTo(0, 0); } catch (e) {}
@@ -1976,6 +2001,101 @@
       if (jc) { jc.value = ''; jc.focus(); }
     });
 
+    // ---------- Transporte (P2P / LAN / Bluetooth) ----------
+    var connP2pBtn = $('#conn-mode-p2p');
+    var connLanBtn = $('#conn-mode-lan');
+    if (connP2pBtn) connP2pBtn.addEventListener('click', function () { applyTransport('p2p'); });
+    if (connLanBtn) connLanBtn.addEventListener('click', function () { applyTransport('lan'); });
+
+    // LAN: host
+    var lanHostBtn = $('#btn-lan-host');
+    if (lanHostBtn) lanHostBtn.addEventListener('click', function () {
+      var st = $('#create-status');
+      if (st) { st.textContent = 'Iniciando LAN…'; st.className = 'online-status'; }
+      savePublicHandle(BCHESS_PROFILE.getProfile().handle);
+      var handlers = {
+        onCreated: function (code) {
+          if (st) { st.textContent = 'Sala LAN activa — comparte tu IP:puerto (5891)'; st.className = 'online-status ok'; }
+          $('#lobby-code').textContent = 'LAN:5891';
+          $('#lobby-status').textContent = 'Esperando al rival…';
+          $('#lobby-status').className = 'lobby-status';
+          $('#lobby-host-controls').classList.remove('hidden');
+          $('#lobby-guest-waiting').classList.add('hidden');
+          $('#btn-start-online').disabled = true;
+          renderLobbyConfigSummary();
+          setScreen('lobby');
+        },
+        onConnected: function () {
+          $('#lobby-status').textContent = 'Rival conectado. Configura la partida.';
+          $('#lobby-status').className = 'lobby-status ok';
+          if (BCHESS_NET.isHost()) $('#btn-start-online').disabled = false;
+        },
+        onMessage: handleNetMessage,
+        onDisconnected: function (reason) {
+          S.onlineConnected = false;
+          stopClock();
+          hideOnlineRemoteCard();
+          showLobbyError(reason || 'Rival desconectado.');
+          setScreen('online');
+        },
+        onError: function (msg) {
+          showLobbyError(msg, 'create-status');
+          setScreen('create-room');
+        }
+      };
+      BCHESS_NET.createRoom('', handlers);
+    });
+
+    // LAN: mostrar panel de unirse
+    var lanJoinBtn = $('#btn-lan-join');
+    var lanHostPanel = $('#lan-host-panel');
+    var lanJoinPanel = $('#lan-join-panel');
+    if (lanJoinBtn) lanJoinBtn.addEventListener('click', function () {
+      if (lanHostPanel) lanHostPanel.classList.add('hidden');
+      if (lanJoinPanel) lanJoinPanel.classList.remove('hidden');
+      var inp = $('#lan-host-ip');
+      if (inp) inp.focus();
+    });
+
+    // LAN: conectar como invitado
+    var lanConnectBtn = $('#btn-lan-connect');
+    if (lanConnectBtn) lanConnectBtn.addEventListener('click', function () {
+      var hostIP = ($('#lan-host-ip').value || '').trim();
+      var port = parseInt(($('#lan-join-port').value || '5891'), 10);
+      if (!hostIP) {
+        var st = $('#create-status');
+        if (st) { st.textContent = 'Introduce la IP del anfitrión'; st.className = 'online-status error'; }
+        return;
+      }
+      if (!port || port < 1024 || port > 65535) {
+        var st2 = $('#create-status');
+        if (st2) { st2.textContent = 'Puerto no válido'; st2.className = 'online-status error'; }
+        return;
+      }
+      savePublicHandle(BCHESS_PROFILE.getProfile().handle);
+      var handlers = {
+        onCreated: function (code) {},
+        onConnected: function () {
+          $('#lobby-status').textContent = 'Rival conectado. Configura la partida.';
+          $('#lobby-status').className = 'lobby-status ok';
+          if (BCHESS_NET.isHost()) $('#btn-start-online').disabled = false;
+        },
+        onMessage: handleNetMessage,
+        onDisconnected: function (reason) {
+          S.onlineConnected = false;
+          stopClock();
+          hideOnlineRemoteCard();
+          showLobbyError(reason || 'Rival desconectado.');
+          setScreen('online');
+        },
+        onError: function (msg) {
+          showLobbyError(msg, 'join-status');
+          setScreen('join-room');
+        }
+      };
+      BCHESS_NET.joinRoom(hostIP + ':' + port, handlers);
+    });
+
     // Crear sala: modo individual/torneo
     bindSeg('#seg-room-mode', function (v) {
       var roundsField = $('#room-rounds-field');
@@ -2095,8 +2215,12 @@
       }
     });
 
-    // Estado de conexión P2P
+    // Estado de conexión inicial
+    applyTransport('p2p');
+
+    // Estado de conexión P2P y LAN
     try { BCHESS_NET.onState(applyConnState); } catch (e) {}
+    try { window.BCHESS_LAN && window.BCHESS_LAN.onState(applyConnState); } catch (e) {}
 
     // Avatar superior
     BCHESS_PROFILE.refreshProfile();

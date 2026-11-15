@@ -1,10 +1,15 @@
 'use strict';
-const { app, BrowserWindow, shell, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
+const net = require('net');
 
 let mainWindow = null;
 let updateNotified = false;
+
+// ================= LAN/TCP state (Host-only server) =================
+let lanServer = null;
+let lanConnections = new Map(); // remoteAddress → net.Socket
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -40,8 +45,6 @@ function createWindow() {
 }
 
 // ================= Auto-update desde GitHub Releases (igual que el APK) =================
-// Si hay un release nuevo en ElalChico/B-Chess, descarga el instalador
-// y se aplica al reiniciar/actualizar la app, sin desinstalar ni perder datos.
 function setupAutoUpdater() {
   if (process.platform !== 'win32') return;
 
@@ -93,6 +96,153 @@ function setupAutoUpdater() {
   });
 }
 
+// ================= LAN/TCP bridge (Desktop ↔ Desktop / Desktop ↔ APK) =================
+const LAN_PORT = 5891;
+
+function broadcastToRenderer(channel, payload) {
+  if (mainWindow && !mainWindow.isDestroyed() && mainWindow.webContents) {
+    mainWindow.webContents.send(channel, payload);
+  }
+}
+
+function startLanServer(port) {
+  return new Promise(function (resolve, reject) {
+    if (lanServer) {
+      try { lanServer.close(); } catch (e) {}
+      lanConnections.clear();
+    }
+    var server = net.createServer(function (socket) {
+      var addr = socket.remoteAddress + ':' + socket.remotePort;
+      lanConnections.set(addr, socket);
+      broadcastToRenderer('lan-state', { state: 'client_connected', address: addr });
+
+      socket.setEncoding('utf8');
+      var buffer = '';
+
+      socket.on('data', function (chunk) {
+        buffer += chunk;
+        var lines = buffer.split('\n');
+        buffer = lines.pop(); // keep incomplete line in buffer
+        lines.forEach(function (line) {
+          line = line.trim();
+          if (line) {
+            broadcastToRenderer('lan-message', { from: addr, data: line });
+          }
+        });
+      });
+
+      socket.on('close', function () {
+        lanConnections.delete(addr);
+        broadcastToRenderer('lan-state', { state: 'client_disconnected', address: addr });
+      });
+
+      socket.on('error', function (err) {
+        console.error('[lan] socket error', err);
+        lanConnections.delete(addr);
+        broadcastToRenderer('lan-state', { state: 'client_disconnected', address: addr });
+      });
+
+      // Handshake: send greeting so guest knows we're alive
+      socket.write('BCHESS-PC 1\n');
+    });
+
+    server.listen(port || LAN_PORT, '0.0.0.0', function () {
+      lanServer = server;
+      broadcastToRenderer('lan-state', { state: 'host_ready', port: server.address().port });
+      resolve({ port: server.address().port });
+    });
+
+    server.on('error', function (err) {
+      console.error('[lan] server error', err);
+      broadcastToRenderer('lan-state', { state: 'host_error', error: err.message });
+      reject(err);
+    });
+  });
+}
+
+function stopLanServer() {
+  lanConnections.forEach(function (socket, addr) {
+    try { socket.destroy(); } catch (e) {}
+  });
+  lanConnections.clear();
+  if (lanServer) {
+    try { lanServer.close(); } catch (e) {}
+    lanServer = null;
+  }
+  broadcastToRenderer('lan-state', { state: 'host_stopped' });
+  return true;
+}
+
+function connectLanClient(host, port) {
+  return new Promise(function (resolve, reject) {
+    var client = net.createConnection({ host: host, port: port || LAN_PORT }, function () {
+      broadcastToRenderer('lan-state', { state: 'guest_connected', host: host, port: client.remotePort });
+      client.write('BCHESS-PC 1\n');
+      resolve({ host: client.remoteAddress, port: client.remotePort });
+    });
+
+    client.setEncoding('utf8');
+    var buffer = '';
+
+    client.on('data', function (chunk) {
+      buffer += chunk;
+      var lines = buffer.split('\n');
+      buffer = lines.pop();
+      lines.forEach(function (line) {
+        line = line.trim();
+        if (line) {
+          broadcastToRenderer('lan-message', { from: 'host', data: line });
+        }
+      });
+    });
+
+    client.on('close', function () {
+      broadcastToRenderer('lan-state', { state: 'guest_disconnected' });
+    });
+
+    client.on('error', function (err) {
+      console.error('[lan] client error', err);
+      broadcastToRenderer('lan-state', { state: 'guest_error', error: err.message });
+      reject(err);
+    });
+
+    // store client globally so we can send messages later
+    lanConnections.set('client', client);
+  });
+}
+
+// IPC handlers (async)
+ipcMain.handle('lan-host', async function (event, port) {
+  return await startLanServer(port);
+});
+
+ipcMain.handle('lan-stop', async function () {
+  return stopLanServer();
+});
+
+ipcMain.handle('lan-connect', async function (event, host, port) {
+  return await connectLanClient(host, port);
+});
+
+ipcMain.handle('lan-send', async function (event, target, message) {
+  var socket = target === 'client' ? lanConnections.get('client') : lanConnections.get(target);
+  if (!socket) return false;
+  try {
+    socket.write(message + '\n');
+    return true;
+  } catch (e) {
+    return false;
+  }
+});
+
+ipcMain.handle('lan-disconnect', async function () {
+  var client = lanConnections.get('client');
+  if (client) try { client.destroy(); } catch (e) {}
+  stopLanServer();
+  return true;
+});
+
+// ================= App lifecycle =================
 app.whenReady().then(function () {
   createWindow();
   setupAutoUpdater();
@@ -100,6 +250,7 @@ app.whenReady().then(function () {
 
 app.on('window-all-closed', function () {
   if (process.platform !== 'darwin') app.quit();
+  stopLanServer();
 });
 
 app.on('activate', function () {
