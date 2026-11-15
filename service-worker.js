@@ -1,4 +1,4 @@
-﻿/*
+/*
  * B-Chess Desktop â€” Service Worker (PWA)
  * Estrategia: HTML/JSON "network-first" (se actualiza al instante en cada visita),
  * assets estÃ¡ticos "cache-first".

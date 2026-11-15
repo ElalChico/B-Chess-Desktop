@@ -1,4 +1,4 @@
-﻿/*
+/*
  * B-Chess Desktop Â· Actualizador inspirado en el APK
  * - Auto-update real: el Service Worker toma control al instante tras instalar
  *   una nueva versiÃ³n y recarga cuando el usuario lo confirme.
