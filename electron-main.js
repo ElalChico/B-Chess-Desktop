@@ -10,8 +10,11 @@ let mainWindow = null;
 let updateNotified = false;
 
 // ================= LAN/TCP state (Host-only server) =================
+// Se admite UNA partida simultánea por instancia (como el APK).
 let lanServer = null;
-let lanConnections = new Map(); // remoteAddress → net.Socket
+let lanConnections = new Map(); // remoteAddress:port → net.Socket (libro)
+let lanHostGuest = null;        // host: el invitado aceptado (socket activo)
+let lanOutbound = null;         // invitado: nuestro socket hacia el anfitrión
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -142,12 +145,17 @@ function broadcastToRenderer(channel, payload) {
 
 function startLanServer(port) {
   return new Promise(function (resolve, reject) {
-    if (lanServer) {
-      try { lanServer.close(); } catch (e) {}
-      lanConnections.clear();
+    if (lanServer || lanHostGuest) {
+      stopLanServer(); // cierra servidor y destruye rival previo
     }
     var server = net.createServer(function (socket) {
       var addr = socket.remoteAddress + ':' + socket.remotePort;
+      // Si ya había un rival conectado, rechazar extras (una partida simultánea)
+      if (lanHostGuest && !lanHostGuest.destroyed) {
+        try { socket.destroy(); } catch (e) {}
+        return;
+      }
+      lanHostGuest = socket;
       lanConnections.set(addr, socket);
       broadcastToRenderer('lan-state', { state: 'client_connected', address: addr });
 
@@ -168,12 +176,14 @@ function startLanServer(port) {
 
       socket.on('close', function () {
         lanConnections.delete(addr);
+        if (lanHostGuest === socket) lanHostGuest = null;
         broadcastToRenderer('lan-state', { state: 'client_disconnected', address: addr });
       });
 
       socket.on('error', function (err) {
         console.error('[lan] socket error', err);
         lanConnections.delete(addr);
+        if (lanHostGuest === socket) lanHostGuest = null;
         broadcastToRenderer('lan-state', { state: 'client_disconnected', address: addr });
       });
 
@@ -196,6 +206,10 @@ function startLanServer(port) {
 }
 
 function stopLanServer() {
+  if (lanHostGuest) {
+    try { lanHostGuest.destroy(); } catch (e) {}
+    lanHostGuest = null;
+  }
   lanConnections.forEach(function (socket, addr) {
     try { socket.destroy(); } catch (e) {}
   });
@@ -232,16 +246,19 @@ function connectLanClient(host, port) {
     });
 
     client.on('close', function () {
+      if (lanOutbound === client) lanOutbound = null;
       broadcastToRenderer('lan-state', { state: 'guest_disconnected' });
     });
 
     client.on('error', function (err) {
       console.error('[lan] client error', err);
+      if (lanOutbound === client) lanOutbound = null;
       broadcastToRenderer('lan-state', { state: 'guest_error', error: err.message });
       reject(err);
     });
 
     // store client globally so we can send messages later
+    lanOutbound = client;
     lanConnections.set('client', client);
   });
 }
@@ -249,6 +266,24 @@ function connectLanClient(host, port) {
 // IPC handlers (async)
 ipcMain.handle('lan-host', async function (event, port) {
   return await startLanServer(port);
+});
+
+// IPs locales (IPv4, sin loopback) para que el anfitrión pueda compartirlas
+ipcMain.handle('lan-get-addresses', async function () {
+  try {
+    var out = [];
+    var ifaces = os.networkInterfaces();
+    Object.keys(ifaces || {}).forEach(function (name) {
+      (ifaces[name] || []).forEach(function (iface) {
+        if (!iface || iface.internal) return;
+        var family = iface.family;
+        if (family === 'IPv4' || family === 4) out.push({ name: name, address: iface.address });
+      });
+    });
+    return out;
+  } catch (e) {
+    return [];
+  }
 });
 
 ipcMain.handle('lan-stop', async function () {
@@ -260,7 +295,10 @@ ipcMain.handle('lan-connect', async function (event, host, port) {
 });
 
 ipcMain.handle('lan-send', async function (event, target, message) {
-  var socket = target === 'client' ? lanConnections.get('client') : lanConnections.get(target);
+  // target 'client' = el rival activo (host→invitado aceptado o invitado→anfitrión)
+  var socket = target === 'client'
+    ? (lanHostGuest || lanOutbound || lanConnections.get('client'))
+    : (lanConnections.get(target) || lanHostGuest || lanOutbound);
   if (!socket) return false;
   try {
     socket.write(message + '\n');
@@ -271,9 +309,12 @@ ipcMain.handle('lan-send', async function (event, target, message) {
 });
 
 ipcMain.handle('lan-disconnect', async function () {
+  stopLanServer(); // destruye anfitrión + rival aceptado
+  if (lanOutbound) try { lanOutbound.destroy(); } catch (e) {}
+  lanOutbound = null;
   var client = lanConnections.get('client');
   if (client) try { client.destroy(); } catch (e) {}
-  stopLanServer();
+  lanConnections.clear();
   return true;
 });
 

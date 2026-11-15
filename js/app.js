@@ -2082,17 +2082,81 @@
     if (connP2pBtn) connP2pBtn.addEventListener('click', function () { applyTransport('p2p'); });
     if (connLanBtn) connLanBtn.addEventListener('click', function () { applyTransport('lan'); });
 
-    // LAN: host
+    // LAN: cargar IPs locales en el panel del anfitrión
+    function loadLanLocalIps() {
+      var host = $('#lan-local-ips');
+      if (!host) return;
+      if (!window.BCHESS_LAN || !window.BCHESS_LAN.getLocalAddresses) {
+        host.innerHTML = '<span class="muted" style="font-size:12px;">La IP local solo se detecta en el .exe de escritorio (Electron). En el navegador no hay acceso a la red.</span>';
+        return;
+      }
+      host.innerHTML = '<span class="muted" style="font-size:12px;">Detectando…</span>';
+      window.BCHESS_LAN.getLocalAddresses().then(function (list) {
+        if (!list || !list.length) {
+          host.innerHTML = '<span class="muted" style="font-size:12px;">No se detectaron IPs (¿sin red?). Comprueba tu WiFi/Ethernet.</span>';
+          return;
+        }
+        var port = ($('#lan-port') && $('#lan-port').value) || '5891';
+        host.innerHTML = list.map(function (it) {
+          return '<button type="button" class="lan-ip-chip" data-copy="' + it.address + ':' + port + '" title="Clic para copiar ' + it.name + '">' + it.address + ':' + port + '</button>';
+        }).join('');
+        Array.prototype.forEach.call(host.querySelectorAll('.lan-ip-chip'), function (chip) {
+          chip.addEventListener('click', function () {
+            var val = chip.getAttribute('data-copy');
+            try { navigator.clipboard.writeText(val); } catch (e) {}
+            showToast('Copiado: ' + val);
+          });
+        });
+      }).catch(function () {
+        host.innerHTML = '<span class="muted" style="font-size:12px;">No se pudo detectar la IP local.</span>';
+      });
+    }
+
+    // LAN: "Crear sala LAN" abre el panel con la IP visible (como el APK)
     var lanHostBtn = $('#btn-lan-host');
+    var lanHostPanel = $('#lan-host-panel');
+    var lanJoinPanel = $('#lan-join-panel');
     if (lanHostBtn) lanHostBtn.addEventListener('click', function () {
+      if (lanJoinPanel) lanJoinPanel.classList.add('hidden');
+      if (lanHostPanel) lanHostPanel.classList.remove('hidden');
+      loadLanLocalIps();
+      var portInp = $('#lan-port');
+      if (portInp) {
+        portInp.addEventListener('input', loadLanLocalIps);
+        portInp.focus();
+      }
+    });
+
+    // LAN: arrancar el servidor cuando el anfitrión confirma
+    var lanStartBtn = $('#btn-lan-start');
+    if (lanStartBtn) lanStartBtn.addEventListener('click', function () {
+      var port = parseInt(($('#lan-port').value || '5891'), 10);
+      if (!port || port < 1024 || port > 65535) {
+        showToast('Puerto no válido (1024–65535)');
+        return;
+      }
       var st = $('#create-status');
       if (st) { st.textContent = 'Iniciando LAN…'; st.className = 'online-status'; }
       savePublicHandle(BCHESS_PROFILE.getProfile().handle);
+      var hostLabel = 'LAN:' + port;
       var handlers = {
         onCreated: function (code) {
-          if (st) { st.textContent = 'Sala LAN activa — comparte tu IP:puerto (5891)'; st.className = 'online-status ok'; }
-          $('#lobby-code').textContent = 'LAN:5891';
-          $('#lobby-status').textContent = 'Esperando al rival…';
+          if (st) { st.textContent = 'Sala LAN activa — comparte tu IP:puerto'; st.className = 'online-status ok'; }
+          // Mostrar IP:puerto real en el lobby (no solo el número de puerto)
+          var ipText = hostLabel;
+          if (window.BCHESS_LAN && window.BCHESS_LAN.getLocalAddresses) {
+            window.BCHESS_LAN.getLocalAddresses().then(function (list) {
+              if (list && list.length) {
+                ipText = list[0].address + ':' + port;
+                var codeEl = $('#lobby-code');
+                if (codeEl) codeEl.textContent = ipText;
+                var ls = $('#lobby-status');
+                if (ls) ls.textContent = 'Esperando al rival en ' + ipText;
+              }
+            }).catch(function () {});
+          }
+          $('#lobby-code').textContent = ipText;
+          $('#lobby-status').textContent = 'Esperando al rival en ' + ipText;
           $('#lobby-status').className = 'lobby-status';
           $('#lobby-host-controls').classList.remove('hidden');
           $('#lobby-guest-waiting').classList.add('hidden');
@@ -2118,19 +2182,33 @@
           setScreen('create-room');
         }
       };
-      BCHESS_NET.createRoom('', handlers);
+      BCHESS_NET.createRoom(String(port), handlers);
     });
 
     // LAN: mostrar panel de unirse
     var lanJoinBtn = $('#btn-lan-join');
-    var lanHostPanel = $('#lan-host-panel');
-    var lanJoinPanel = $('#lan-join-panel');
     if (lanJoinBtn) lanJoinBtn.addEventListener('click', function () {
       if (lanHostPanel) lanHostPanel.classList.add('hidden');
       if (lanJoinPanel) lanJoinPanel.classList.remove('hidden');
       var inp = $('#lan-host-ip');
       if (inp) inp.focus();
     });
+
+    // LAN: el campo "IP del anfitrión" acepta pegar "ip:puerto" y separa al puerto
+    var lanIpInput = $('#lan-host-ip');
+    var lanPortInput = $('#lan-join-port');
+    if (lanIpInput && lanPortInput) {
+      lanIpInput.addEventListener('input', function () {
+        var v = (lanIpInput.value || '').trim();
+        var idx = v.indexOf(':');
+        if (idx !== -1) {
+          var ip = v.substring(0, idx).trim();
+          var p = parseInt(v.substring(idx + 1), 10);
+          if (ip) lanIpInput.value = ip;
+          if (p && p >= 1024 && p <= 65535) lanPortInput.value = p;
+        }
+      });
+    }
 
     // LAN: conectar como invitado
     var lanConnectBtn = $('#btn-lan-connect');
@@ -2140,6 +2218,11 @@
       if (!hostIP) {
         var st = $('#create-status');
         if (st) { st.textContent = 'Introduce la IP del anfitrión'; st.className = 'online-status error'; }
+        return;
+      }
+      if (!/^\d{1,3}(\.\d{1,3}){3}$/.test(hostIP)) {
+        var stIp = $('#create-status');
+        if (stIp) { stIp.textContent = 'Formato de IP no válido (ej. 192.168.1.50)'; stIp.className = 'online-status error'; }
         return;
       }
       if (!port || port < 1024 || port > 65535) {
@@ -2608,8 +2691,15 @@
     return S.orientation === 'w' ? (7 - row) * 8 + col : row * 8 + (7 - col);
   }
 
+  // Cachés para evitar recomputar historial/FEN en cada render
+  var histCache = { key: null, hist: null };
   function historyVerbose() {
-    return S.game ? S.game.history({ verbose: true }) : [];
+    if (!S.game) return [];
+    var key = S.fens.length + '|' + (S.fens.length ? S.fens[S.fens.length - 1] : '');
+    if (histCache.key === key) return histCache.hist;
+    histCache.key = key;
+    histCache.hist = S.game.history({ verbose: true });
+    return histCache.hist;
   }
 
   function moveAtPly(ply) {
@@ -2617,9 +2707,16 @@
     return ply > 0 && ply <= hist.length ? hist[ply - 1] : null;
   }
 
+  // viewGame() parsea el FEN solo cuando el ply cambia (no en cada pointer)
+  var viewCache = { fen: null, game: null };
   function viewGame() {
+    var fen = S.fens[S.viewPly];
+    if (!fen) { var t = new Chess(); t.reset(); return t; }
+    if (viewCache.fen === fen) return viewCache.game;
     var tmp = new Chess();
-    try { tmp.load(S.fens[S.viewPly]); } catch (e) { tmp.reset(); }
+    try { tmp.load(fen); } catch (e) { tmp.reset(); }
+    viewCache.fen = fen;
+    viewCache.game = tmp;
     return tmp;
   }
 
@@ -2634,80 +2731,166 @@
     return S.game.turn() === S.localColor;
   }
 
-  function renderBoard() {
+  // ================= Tablero: render incremental =================
+  // Se construye el DOM una sola vez; después solo se tocan las celdas que cambian.
+  var boardCells = null; // sq(0..63) → { el, img, pieceSig, flags:{lastMove,selected,legal,capture,check,premove} }
+  var renderCache = {
+    orientation: null,
+    showCoords: null,
+    fenKey: null,
+    legalSig: null,
+    lastSig: null,
+    checkSq: null,
+    pieceSet: null,
+    premoveSig: null,
+    atLive: null
+  };
+
+  function clearBoardCache() {
+    boardCells = null;
+    renderCache.orientation = null;
+    renderCache.showCoords = null;
+    renderCache.fenKey = null;
+    renderCache.legalSig = null;
+    renderCache.lastSig = null;
+    renderCache.checkSq = null;
+    renderCache.premoveSig = null;
+    renderCache.atLive = null;
+  }
+
+  function setCellFlag(rec, flag, on) {
+    if (rec.flags[flag] === on) return;
+    rec.flags[flag] = on;
+    rec.el.classList.toggle(flag, on);
+  }
+
+  function buildBoardCells() {
     var board = $('#board');
     if (!board) return;
     board.innerHTML = '';
-    var vg = viewGame();
-    var atLive = isFullHistoryInView();
-    var order = [];
+    boardCells = new Array(64);
     for (var row = 0; row < 8; row++) {
       for (var col = 0; col < 8; col++) {
-        order.push({ sq: displayToSquare(row, col), row: row, col: col });
-      }
-    }
-
-    var lastMove = moveAtPly(S.viewPly);
-
-    var kingInCheck = null;
-    if (vg.in_check()) {
-      var turn = vg.turn();
-      var files = 'abcdefgh';
-      for (var r = 1; r <= 8; r++) {
-        for (var f = 0; f < 8; f++) {
-          var sqAlg = files.charAt(f) + r;
-          var p = vg.get(sqAlg);
-          if (p && p.type === 'k' && p.color === turn) { kingInCheck = algebraicToSquare(sqAlg); break; }
+        var sq = displayToSquare(row, col);
+        var alg = sqToAlgebraic(sq);
+        var cellEl = document.createElement('div');
+        var isLight = (row + col) % 2 === 0;
+        cellEl.className = 'square ' + (isLight ? 'light' : 'dark');
+        cellEl.dataset.square = sq;
+        if (S.settings.showCoordinates !== false) {
+          if (col === 0) {
+            var rs = document.createElement('span');
+            rs.className = 'coord rank';
+            rs.textContent = alg.charAt(1);
+            cellEl.appendChild(rs);
+          }
+          if (row === 7) {
+            var fs = document.createElement('span');
+            fs.className = 'coord file';
+            fs.textContent = alg.charAt(0);
+            cellEl.appendChild(fs);
+          }
         }
-        if (kingInCheck !== null) break;
-      }
-    }
-
-    order.forEach(function (cell) {
-      var sq = cell.sq;
-      var cellEl = document.createElement('div');
-      var isLight = (cell.row + cell.col) % 2 === 0;
-      cellEl.className = 'square ' + (isLight ? 'light' : 'dark');
-      cellEl.dataset.square = sq;
-
-      var alg = sqToAlgebraic(sq);
-      var rankLabel = alg.charAt(1), fileLabel = alg.charAt(0);
-      // Coordenadas
-      if (S.settings.showCoordinates !== false) {
-        if (cell.col === 0) {
-          var rs = document.createElement('span'); rs.className = 'coord rank'; rs.textContent = rankLabel; cellEl.appendChild(rs);
-        }
-        if (cell.row === 7) {
-          var fs = document.createElement('span'); fs.className = 'coord file'; fs.textContent = fileLabel; cellEl.appendChild(fs);
-        }
-      }
-
-      // Último movimiento
-      if (S.settings.showLastMove !== false && lastMove && (lastMove.from === alg || lastMove.to === alg)) cellEl.classList.add('last-move');
-      if (atLive && S.selected === sq) cellEl.classList.add('selected');
-      // Movimientos legales
-      if (S.settings.showLegalMoves !== false && atLive && S.legalTargets.indexOf(sq) !== -1) {
-        cellEl.classList.add('legal');
-        var target = vg.get(alg);
-        if (target) cellEl.classList.add('capture');
-      }
-      // Jaque
-      if (S.settings.showCheck !== false && kingInCheck === sq) cellEl.classList.add('check');
-      
-
-      var p = vg.get(alg);
-      if (p) {
         var img = document.createElement('img');
         img.className = 'piece';
-        img.src = pieceUrl(p.color, p.type);
         img.alt = '';
         img.draggable = false;
+        img.style.display = 'none';
         cellEl.appendChild(img);
+        cellEl.addEventListener('pointerdown', onSquarePress);
+        board.appendChild(cellEl);
+        boardCells[sq] = { sq: sq, el: cellEl, img: img, pieceSig: '', flags: {} };
       }
-      cellEl.addEventListener('pointerdown', onSquarePress);
-      board.appendChild(cellEl);
-    });
+    }
+    renderCache.orientation = S.orientation;
+    renderCache.showCoords = (S.settings.showCoordinates !== false);
+    renderCache.fenKey = null;
+    renderCache.legalSig = null;
+    renderCache.lastSig = null;
+    renderCache.checkSq = null;
+    renderCache.pieceSet = null;
+    renderCache.premoveSig = null;
+    renderCache.atLive = null;
+  }
 
+  function detectKingCheck(vg) {
+    if (!vg.in_check()) return null;
+    var turn = vg.turn();
+    var files = 'abcdefgh';
+    for (var r = 1; r <= 8; r++) {
+      for (var f = 0; f < 8; f++) {
+        var p = vg.get(files.charAt(f) + r);
+        if (p && p.type === 'k' && p.color === turn) return algebraicToSquare(files.charAt(f) + r);
+      }
+    }
+    return null;
+  }
+
+  function renderBoard() {
+    var board = $('#board');
+    if (!board) return;
+    if (!boardCells ||
+        renderCache.orientation !== S.orientation ||
+        renderCache.showCoords !== (S.settings.showCoordinates !== false)) {
+      buildBoardCells();
+    }
+    var vg = viewGame();
+    var atLive = isFullHistoryInView();
+    var fenKey = S.fens[S.viewPly] || 'empty:' + S.viewPly;
+    var lastMove = moveAtPly(S.viewPly);
+    var lastSig = (S.settings.showLastMove !== false && lastMove) ? (lastMove.from + '>' + lastMove.to) : 'none';
+    var legalOn = S.settings.showLegalMoves !== false;
+    var legalSig = legalOn && atLive ? (S.legalTargets.join(',') + '@' + S.selected) : 'off';
+    var checkSq = S.settings.showCheck !== false ? detectKingCheck(vg) : null;
+    var premoveSig = S.premove && S.premove.from !== null
+      ? (S.premove.from + '>' + (S.premove.to === null ? '_' : S.premove.to))
+      : 'none';
+    var pieceSet = S.settings.pieceSet;
+
+    var piecesChanged = renderCache.fenKey !== fenKey || renderCache.pieceSet !== pieceSet;
+    var clsChanged = piecesChanged || renderCache.legalSig !== legalSig || renderCache.lastSig !== lastSig ||
+      renderCache.checkSq !== checkSq || renderCache.premoveSig !== premoveSig || renderCache.atLive !== atLive;
+    if (!clsChanged) { updatePlaybackUI(); return; } // nada que pintar
+
+    var showLast = S.settings.showLastMove !== false && lastMove;
+    for (var sq = 0; sq < 64; sq++) {
+      var rec = boardCells[sq];
+      var alg = sqToAlgebraic(sq);
+
+      // Piezas: solo tocar la <img> si cambió el set o el contenido
+      if (piecesChanged) {
+        var p = vg.get(alg);
+        var sig = p ? pieceSet + ':' + p.color + p.type : '';
+        if (rec.pieceSig !== sig) {
+          rec.pieceSig = sig;
+          if (p) {
+            var url = pieceUrl(p.color, p.type);
+            if (rec.img.getAttribute('src') !== url) rec.img.src = url;
+            rec.img.style.display = '';
+          } else {
+            rec.img.style.display = 'none';
+          }
+        }
+      }
+
+      // Clases
+      setCellFlag(rec, 'last-move', !!(showLast && lastMove && (lastMove.from === alg || lastMove.to === alg)));
+      setCellFlag(rec, 'selected', !!(atLive && S.selected === sq));
+      var isLegal = legalOn && atLive && S.legalTargets.indexOf(sq) !== -1;
+      setCellFlag(rec, 'legal', isLegal);
+      setCellFlag(rec, 'capture', !!(isLegal && vg.get(alg)));
+      setCellFlag(rec, 'check', checkSq === sq);
+      setCellFlag(rec, 'premove', !!(S.premove && S.premove.from === sq));
+      setCellFlag(rec, 'premove-target', !!(S.premove && S.premove.to === sq && S.premove.to !== null));
+    }
+
+    renderCache.fenKey = fenKey;
+    renderCache.legalSig = legalSig;
+    renderCache.lastSig = lastSig;
+    renderCache.checkSq = checkSq;
+    renderCache.pieceSet = pieceSet;
+    renderCache.premoveSig = premoveSig;
+    renderCache.atLive = atLive;
     updatePlaybackUI();
   }
 
@@ -2810,7 +2993,7 @@
   }
 
   // ================= Drag & drop =================
-  var drag = { active: false, from: null, ghost: null };
+  var drag = { active: false, from: null, ghost: null, boardRect: null, sourceEl: null };
 
   function startDrag(e, sq) {
     drag.active = true;
@@ -2819,6 +3002,8 @@
     var p = S.game.get(alg);
     if (!p) return;
     var board = $('#board');
+    // Cachear el rectángulo del tablero una sola vez por arrastre (evita layout por pointerup)
+    drag.boardRect = board.getBoundingClientRect();
     var cell = board.querySelector('.square[data-square="' + sq + '"]');
     var size = cell ? cell.getBoundingClientRect().width : 60;
     var ghost = document.createElement('img');
@@ -2829,6 +3014,7 @@
     ghost.style.height = (size * 0.88) + 'px';
     document.body.appendChild(ghost);
     drag.ghost = ghost;
+    if (cell) { cell.classList.add('drag-source'); drag.sourceEl = cell; }
     moveGhost(e.clientX, e.clientY);
     window.addEventListener('pointermove', onDragMove);
     window.addEventListener('pointerup', onDragEnd);
@@ -2836,21 +3022,31 @@
 
   function moveGhost(x, y) {
     if (!drag.ghost) return;
-    drag.ghost.style.left = x + 'px';
-    drag.ghost.style.top = y + 'px';
+    // transform evita layout/paint por cada movimiento del puntero
+    drag.ghost.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0) translate(-50%,-50%)';
   }
 
-  function onDragMove(e) { if (drag.active) moveGhost(e.clientX, e.clientY); }
+  function onDragMove(e) {
+    if (!drag.active) return;
+    // coalescar al ritmo de frames para movimientos ultra fluidos
+    if (drag.moveRaf) return;
+    var cx = e.clientX, cy = e.clientY;
+    drag.moveRaf = requestAnimationFrame(function () { drag.moveRaf = null; moveGhost(cx, cy); });
+  }
 
   function onDragEnd(e) {
     window.removeEventListener('pointermove', onDragMove);
     window.removeEventListener('pointerup', onDragEnd);
+    if (drag.moveRaf) { cancelAnimationFrame(drag.moveRaf); drag.moveRaf = null; }
     if (drag.ghost) { drag.ghost.remove(); drag.ghost = null; }
+    if (drag.sourceEl) { drag.sourceEl.classList.remove('drag-source'); drag.sourceEl = null; }
     if (!drag.active) return;
     drag.active = false;
 
     var board = $('#board');
-    var rect = board.getBoundingClientRect();
+    var rect = drag.boardRect || (board ? board.getBoundingClientRect() : null);
+    drag.boardRect = null;
+    if (!board || !rect) { renderBoard(); return; }
     var x = e.clientX - rect.left, y = e.clientY - rect.top;
     if (x < 0 || y < 0 || x > rect.width || y > rect.height) { renderBoard(); return; }
 

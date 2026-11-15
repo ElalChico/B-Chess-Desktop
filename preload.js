@@ -25,6 +25,10 @@ contextBridge.exposeInMainWorld('BCHESS_LAN', {
   disconnect: function () {
     return ipcRenderer.invoke('lan-disconnect');
   },
+  // IPs LAN del equipo (IPv4) para compartir con el rival
+  getLocalAddresses: function () {
+    return ipcRenderer.invoke('lan-get-addresses');
+  },
   // Suscribirse a mensajes/eventos
   onMessage: function (callback) {
     var handler = function (event, payload) {

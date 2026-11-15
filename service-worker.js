@@ -1,11 +1,11 @@
-/*
- * B-Chess Desktop — Service Worker (PWA)
+﻿/*
+ * B-Chess Desktop â€” Service Worker (PWA)
  * Estrategia: HTML/JSON "network-first" (se actualiza al instante en cada visita),
- * assets estáticos "cache-first".
+ * assets estÃ¡ticos "cache-first".
  * Auto-update de verdad: al instalar un SW nuevo, toma el control al instante.
- * Al publicar una nueva versión en GitHub Pages, basta con recargar para recibirla.
+ * Al publicar una nueva versiÃ³n en GitHub Pages, basta con recargar para recibirla.
  */
-const VERSION = 'b-chess-desktop-v2.2.0-2026-11-15';
+const VERSION = 'b-chess-desktop-v2.2.1-2026-11-15';
 const CORE = [
   './',
   './index.html',
@@ -57,11 +57,20 @@ self.addEventListener('fetch', function (event) {
   var isHtml = accept.includes('text/html') || url.pathname.endsWith('.html') || url.pathname.endsWith('/');
   var isJson = url.pathname.endsWith('.json');
 
+  function safelyCache(cacheName, request, res) {
+    if (!res || res.status !== 200) return; // 206 Parciales no soportados por Cache API
+    try {
+      var clone = res.clone();
+      caches.open(cacheName).then(function (cache) {
+        cache.put(request, clone).catch(function () {});
+      });
+    } catch (e) {}
+  }
+
   if (isHtml || isJson) {
     event.respondWith(
       fetch(req).then(function (res) {
-        var clone = res.clone();
-        caches.open(VERSION).then(function (cache) { cache.put(req, clone); });
+        safelyCache(VERSION, req, res);
         return res;
       }).catch(function () {
         return caches.match(req).then(function (cached) { return cached || caches.match('./index.html'); });
@@ -70,14 +79,11 @@ self.addEventListener('fetch', function (event) {
     return;
   }
 
-  // Estáticos: network-first (las actualizaciones se aplican siempre;
-  // si no hay red, se sirve la copia en caché — app sigue funcionando offline)
+  // EstÃ¡ticos: network-first (las actualizaciones se aplican siempre;
+  // si no hay red, se sirve la copia en cachÃ© â€” app sigue funcionando offline)
   event.respondWith(
     fetch(req).then(function (res) {
-      if (res && res.ok) {
-        var clone = res.clone();
-        caches.open(VERSION).then(function (cache) { cache.put(req, clone); });
-      }
+      safelyCache(VERSION, req, res);
       return res;
     }).catch(function () {
       return caches.match(req);

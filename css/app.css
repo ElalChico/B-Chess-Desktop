@@ -277,6 +277,16 @@ body {
 .conn-mode-active .conn-mode-sub { color: #9fe0ba; }
 .conn-mode:not(.conn-mode-soon):hover { border-color: var(--ok); }
 
+/* ---- LAN: panel de conexión ---- */
+.lan-panel { margin-top: 14px; padding: 14px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; }
+.lan-ips { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 10px; }
+.lan-ip-chip {
+  font-family: var(--font-mono); font-size: 13px; font-weight: 700; cursor: pointer;
+  color: var(--ok-strong); background: var(--ok-bg); border: 1px solid var(--ok);
+  border-radius: 8px; padding: 6px 12px; transition: transform .15s, box-shadow .15s, background-color .2s;
+}
+.lan-ip-chip:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(76,175,80,.25); background: rgba(111,174,143,.22); }
+
 /* ---- Online: dos tiles compactos ---- */
 .online-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 10px 0 6px; }
 .online-tile {
@@ -491,6 +501,12 @@ body {
 .square.legal.capture::before {
   width: 90%; height: 90%; background: transparent; border: 5px solid var(--sq-legal); border-radius: 50%;
 }
+/* Premoves: amarillo = origen fijado, azul = destino */
+.square.light.premove, .square.dark.premove { background: rgba(201,162,39,.42); }
+.square.premove { box-shadow: inset 0 0 0 3px #c9a227; }
+.square.light.premove-target, .square.dark.premove-target { background: rgba(143,182,216,.42); }
+.square.premove-target { box-shadow: inset 0 0 0 3px #8fb6d8; }
+.square.drag-source .piece { opacity: .15; }
 .square .coord { position: absolute; font-size: 9px; font-weight: 700; color: var(--coord); pointer-events: none; z-index: 1; }
 .square .coord.rank { left: 3px; top: 2px; }
 .square .coord.file { right: 4px; bottom: 2px; }
@@ -501,7 +517,8 @@ body {
 }
 .piece.ghost {
   position: fixed; z-index: 9999; pointer-events: none;
-  transform: translate(-50%, -50%); object-fit: contain;
+  left: 0; top: 0; transform: translate(-50%, -50%); object-fit: contain;
+  transition: none; will-change: transform;
 }
 
 .check-banner {
@@ -710,6 +727,8 @@ body.dev-mode [data-dev]:hover { outline: 2px dashed var(--accent); outline-offs
 
 /* ===== Perfil ===== */
 .profile-screen { max-width: 780px; }
+/* Cuando el panel de estadísticas está visible: usar todo el ancho disponible */
+.profile-screen:has(#profile-stats-panel:not(.hidden)) { max-width: none; }
 .profile-card { display: flex; gap: 24px; align-items: center; padding: 22px 20px; background: radial-gradient(1200px 600px at 50% -10%, rgba(155,186,216,.06), var(--panel-2) 55%); border: 1px solid var(--line-2); border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,.35); position: relative; overflow: hidden; }
 .profile-card::before { content: ''; position: absolute; inset: 0; border-radius: 20px; padding: 1px; background: linear-gradient(90deg, var(--ok), var(--line-2), var(--warn)); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: destination-out; mask-composite: exclude; pointer-events: none; }
 .profile-card > * { position: relative; z-index: 1; }
@@ -786,10 +805,10 @@ body.dev-mode [data-dev]:hover { outline: 2px dashed var(--accent); outline-offs
 .stats-panel { max-width: none; }
 .stats-panel .stats-table { margin-bottom: 18px; }
 /* Todas las tarjetas con el mismo tamaño: la rejilla estira a la altura de la más grande */
-.chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: stretch; grid-auto-rows: 1fr; }
+.chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; align-items: stretch; grid-auto-rows: 1fr; width: 100%; }
 .chart-block { background: var(--panel-2); border: 1px solid var(--line); border-radius: 14px; padding: 16px 16px 12px; min-width: 0; display: flex; flex-direction: column; height: 100%; transition: border-color .2s ease; }
 .chart-block:hover { border-color: var(--line-2); }
-.chart-block .chart { flex: 1 1 auto; min-height: 340px; width: 100%; }
+.chart-block .chart { flex: 1 1 auto; min-height: 400px; width: 100%; }
 .chart-block-wide { grid-column: 1 / -1; }
 .chart-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
 .chart-title { font-size: 14px; font-weight: 700; color: var(--text, #e6e6e6); margin: 0 0 6px; letter-spacing: .3px; }

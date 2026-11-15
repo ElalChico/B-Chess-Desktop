@@ -59,13 +59,18 @@
     handlers.onDisconnected = _handlers && _handlers.onDisconnected;
     handlers.onError = _handlers && _handlers.onError;
 
+    // code puede traer el puerto deseado ("5891"); si no, puerto por defecto
+    var port = parseInt(code, 10);
+    if (!port || isNaN(port) || port < 1024 || port > 65535) port = LAN_PORT;
+
     state.isHost = true;
     state.connected = false;
-    state.code = code || ('LAN' + Math.floor(Math.random() * 10000));
+    state.code = 'LAN:' + port;
+    state.port = port;
     _handlers.onCreated && _handlers.onCreated(state.code);
-    emitState({ state: 'connecting', code: state.code, host: true });
+    emitState({ state: 'connecting', code: state.code, host: true, port: port });
 
-    window.BCHESS_LAN.host(LAN_PORT).then(function (result) {
+    window.BCHESS_LAN.host(port).then(function (result) {
       // servidor listo, emitiendo connecting (el invitado se conectará)
       emitState({ state: 'connecting', code: state.code, host: true, port: result.port });
     }).catch(function (err) {

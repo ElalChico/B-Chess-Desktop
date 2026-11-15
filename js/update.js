@@ -1,13 +1,13 @@
-/*
- * B-Chess Desktop · Actualizador inspirado en el APK
+﻿/*
+ * B-Chess Desktop Â· Actualizador inspirado en el APK
  * - Auto-update real: el Service Worker toma control al instante tras instalar
- *   una nueva versión y recarga cuando el usuario lo confirme.
- * - Además, consulta los Releases de GitHub y avisa cuando hay una versión nueva.
+ *   una nueva versiÃ³n y recarga cuando el usuario lo confirme.
+ * - AdemÃ¡s, consulta los Releases de GitHub y avisa cuando hay una versiÃ³n nueva.
  */
 window.BCHESS_UPDATE = (function () {
   'use strict';
 
-  var CURRENT_VERSION = '2.2.0';
+  var CURRENT_VERSION = '2.2.1';
   var REPO = 'ElalChico/B-Chess-Desktop';
   var CHECK_URL = 'https://api.github.com/repos/' + REPO + '/releases/latest';
 
@@ -50,7 +50,7 @@ window.BCHESS_UPDATE = (function () {
     });
   }
 
-  // ---------- UI: insignia/actualización ----------
+  // ---------- UI: insignia/actualizaciÃ³n ----------
   function wireBadge() {
     var badge = document.getElementById('version-badge');
     if (!badge) return;
@@ -58,13 +58,13 @@ window.BCHESS_UPDATE = (function () {
     badge.title = 'Comprobar actualizaciones';
     badge.addEventListener('click', function () {
       checkForUpdate().then(function (info) {
-        badge.textContent = (info && info.available) ? 'Actualización v' + info.latest + ' disponible' : 'B-Chess Desktop v' + CURRENT_VERSION;
+        badge.textContent = (info && info.available) ? 'ActualizaciÃ³n v' + info.latest + ' disponible' : 'B-Chess Desktop v' + CURRENT_VERSION;
         badge.classList.toggle('has-update', !!(info && info.available));
         if (info && info.available) {
           applyUpdateNow();
         } else if (info) {
           var t = document.getElementById('toast');
-          if (t) { t.textContent = 'Estás en la última versión (v' + CURRENT_VERSION + ')'; t.classList.add('show'); setTimeout(function () { t.classList.remove('show'); }, 2500); }
+          if (t) { t.textContent = 'EstÃ¡s en la Ãºltima versiÃ³n (v' + CURRENT_VERSION + ')'; t.classList.add('show'); setTimeout(function () { t.classList.remove('show'); }, 2500); }
         }
       });
     });
