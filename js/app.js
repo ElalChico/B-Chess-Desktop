@@ -1916,7 +1916,6 @@
     S.currentScreen = 'home';
     $('#btn-play-ai').addEventListener('click', function () { setScreen('setup'); });
     $('#btn-play-online').addEventListener('click', function () { setScreen('online'); });
-    $('#btn-settings-home').addEventListener('click', function () { renderSettingsUI(); setScreen('settings'); });
     $('#btn-settings-footer').addEventListener('click', function () { renderSettingsUI(); setScreen('settings'); });
     var topProfile = $('#btn-top-profile');
     if (topProfile) topProfile.addEventListener('click', function () { BCHESS_PROFILE.refreshProfile(); setScreen('profile'); });
