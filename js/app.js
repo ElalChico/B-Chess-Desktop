@@ -80,7 +80,8 @@
       showCoordinates: true,
       showLegalMoves: true,
       showCheck: true,
-      showLastMove: true
+      showLastMove: true,
+      privacy: { sharePhoto: true, shareIdentity: true, shareStats: true, shareHistory: true }
     },
     game: null,
     mode: 'ai',
@@ -833,6 +834,13 @@
       badge.className = 'end-badge ' + outcome;
     }
 
+    // Marcar el panel con el outcome (para estilo de marco/glow)
+    var endContentEl = document.querySelector('#end-modal .modal-content');
+    if (endContentEl) {
+      endContentEl.classList.remove('outcome-win', 'outcome-loss', 'outcome-draw');
+      endContentEl.classList.add('outcome-' + outcome);
+    }
+
     $('#end-message').textContent = message;
 
     var meAvatar = $('#end-avatar-me');
@@ -844,10 +852,12 @@
     if (oppAvatar) {
       if (S.mode === 'online' && S.remoteProfile) {
         renderAvatarInto(oppAvatar, S.remoteProfile.name, S.remoteProfile.photo);
+      } else if (S.mode === 'ai' || isStockfishOpp(oppName)) {
+        applyStockfishAvatar(oppAvatar);
       } else {
         oppAvatar.textContent = (oppName || 'R').trim().charAt(0).toUpperCase();
         oppAvatar.style.backgroundImage = '';
-        oppAvatar.classList.remove('has-photo');
+        oppAvatar.classList.remove('has-photo', 'stockfish-avatar');
       }
     }
     var oppNameEl = $('#end-name-opp');
@@ -983,7 +993,9 @@
     var parsed = parseTimeControl(tc);
     S.timeMs = parsed.timeMs; S.incrementMs = parsed.incrementMs;
     S.clocks = { w: S.timeMs, b: S.timeMs };
-    $('#game-title').textContent = S.mode === 'ai' ? 'vs IA' : 'Partida en línea';
+    $('#game-title').innerHTML = S.mode === 'ai'
+      ? '<img class="gt-sf" src="assets/img/stockfish.png" alt="">D. Stockfish'
+      : 'Partida en línea';
 
     // UI jugadores
     $('#role-us').textContent = localColor === 'w' ? 'Blancas' : 'Negras';
@@ -992,10 +1004,12 @@
     renderOwnAvatarInto($('#avatar-us'));
     if (S.mode === 'online' && S.remoteProfile) {
       renderAvatarInto($('#avatar-them'), S.remoteProfile.name, S.remoteProfile.photo);
+    } else if (S.mode === 'ai') {
+      applyStockfishAvatar($('#avatar-them'));
     } else {
-      $('#avatar-them').textContent = S.mode === 'ai' ? 'S' : 'R';
+      $('#avatar-them').textContent = 'R';
       $('#avatar-them').style.backgroundImage = '';
-      $('#avatar-them').classList.remove('has-photo');
+      $('#avatar-them').classList.remove('has-photo', 'stockfish-avatar');
     }
     var myHandle = (profile.handle) || (S.settings.name || 'jugador');
     $('#name-us').textContent = myHandle;
@@ -1230,6 +1244,17 @@
   }
 
   // Renderiza (foto o inicial) un elemento avatar
+  var STOCKFISH_IMG = 'assets/img/stockfish.png';
+  function applyStockfishAvatar(el) {
+    if (!el) return;
+    el.style.backgroundImage = 'url("' + STOCKFISH_IMG + '")';
+    el.textContent = '';
+    el.classList.add('has-photo', 'stockfish-avatar');
+  }
+  function isStockfishOpp(name) {
+    return String(name || '').toLowerCase() === 'stockfish';
+  }
+
   function renderAvatarInto(el, name, photo) {
     if (!el) return;
     if (photo) {
@@ -1323,21 +1348,38 @@
         var p = BCHESS_PROFILE.getProfile();
         var games = [];
         try { games = BCHESS_PROFILE.getGames() || []; } catch (e) {}
+        var priv = privacySettings();
+        var outName = priv.shareIdentity ? (p.handle || p.name || 'Jugador') : 'Rival';
         var wins = 0, draws = 0, losses = 0;
-        games.forEach(function (g) {
-          if (g.myResult === 'win') wins++;
-          else if (g.myResult === 'loss') losses++;
-          else draws++;
-        });
-        var arr = buildHistoryJson(games, p);
+        if (priv.shareStats) {
+          games.forEach(function (g) {
+            if (g.myResult === 'win') wins++;
+            else if (g.myResult === 'loss') losses++;
+            else draws++;
+          });
+        }
+        var arr = priv.shareHistory ? buildHistoryJson(games, { handle: outName, name: outName }) : [];
         return downscalePhoto(p.avatar, 96, 0.4).then(function (photo) {
           var line = JSON.stringify({
             v: 2, type: 'PROFILE',
-            name: p.handle || p.name || 'Jugador',
+            name: outName,
             color: S.settings.colorOnline === 'r' ? 'random' : (S.settings.colorOnline === 'b' ? 'black' : 'white'),
-            photo: photo || '',
-            total: games.length, wins: wins, draws: draws, losses: losses,
+            photo: (priv.sharePhoto && photo) ? photo : '',
+            total: priv.shareStats ? games.length : 0,
+            wins: priv.shareStats ? wins : 0,
+            draws: priv.shareStats ? draws : 0,
+            losses: priv.shareStats ? losses : 0,
             games: JSON.stringify(arr)
+          });
+          BCHESS_NET.sendLine(line);
+        }).catch(function () {
+          var line = JSON.stringify({
+            v: 2, type: 'PROFILE',
+            name: outName,
+            color: S.settings.colorOnline === 'r' ? 'random' : (S.settings.colorOnline === 'b' ? 'black' : 'white'),
+            photo: '',
+            total: 0, wins: 0, draws: 0, losses: 0,
+            games: '[]'
           });
           BCHESS_NET.sendLine(line);
         });
@@ -1709,6 +1751,19 @@
       lastMoveToggle.setAttribute('aria-checked', on ? 'true' : 'false');
     }
 
+    var priv = privacySettings();
+    function syncPrivacyToggle(sel, onOff) {
+      var el = $(sel);
+      if (!el) return;
+      el.textContent = onOff ? 'ON' : 'OFF';
+      el.classList.toggle('on', onOff);
+      el.setAttribute('aria-checked', onOff ? 'true' : 'false');
+    }
+    syncPrivacyToggle('#toggle-share-photo', priv.sharePhoto);
+    syncPrivacyToggle('#toggle-share-identity', priv.shareIdentity);
+    syncPrivacyToggle('#toggle-share-stats', priv.shareStats);
+    syncPrivacyToggle('#toggle-share-history', priv.shareHistory);
+
     syncSeg('#seg-color', S.settings.colorAI);
     syncSeg('#seg-color-online', S.settings.colorOnline);
 
@@ -1910,8 +1965,14 @@
     $('#game-title').textContent = 'Partida guardada';
     $('#role-us').textContent = S.localColor === 'w' ? 'Blancas' : 'Negras';
     $('#role-them').textContent = S.localColor === 'w' ? 'Negras' : 'Blancas';
-    $('#avatar-us').textContent = (profile.name || 'T').charAt(0).toUpperCase();
-    $('#avatar-them').textContent = (oppName || 'R').charAt(0).toUpperCase();
+    renderOwnAvatarInto($('#avatar-us'));
+    if (isStockfishOpp(oppName)) {
+      applyStockfishAvatar($('#avatar-them'));
+    } else {
+      $('#avatar-them').textContent = (oppName || 'R').charAt(0).toUpperCase();
+      $('#avatar-them').style.backgroundImage = '';
+      $('#avatar-them').classList.remove('has-photo', 'stockfish-avatar');
+    }
     $('#name-us').textContent = profile.handle || profile.name || 'Tú';
     $('#name-them').textContent = oppName;
     $('#game-status').textContent = 'Partida terminada';
@@ -2042,6 +2103,26 @@
     if (btnFullscreenGame) btnFullscreenGame.addEventListener('click', function () {
       toggleFullscreen();
     });
+
+    // Panel colapsable (movimientos): el tablero toma todo el espacio
+    var collapseBtn = $('#btn-collapse-panel');
+    var expandBtn = $('#btn-expand-panel');
+    var gameWrap = document.querySelector('.game-wrap');
+    function setPanelCollapsed(collapsed) {
+      if (gameWrap) gameWrap.classList.toggle('panel-collapsed', collapsed);
+      if (collapseBtn) {
+        collapseBtn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+        collapseBtn.title = collapsed ? 'Mostrar panel de movimientos' : 'Ocultar panel de movimientos';
+      }
+      if (expandBtn) expandBtn.classList.toggle('hidden', !collapsed);
+      try { localStorage.setItem('bchess-panel-collapsed', collapsed ? '1' : '0'); } catch (e) {}
+    }
+    if (collapseBtn) collapseBtn.addEventListener('click', function () {
+      var isCollapsed = !!(gameWrap && gameWrap.classList.contains('panel-collapsed'));
+      setPanelCollapsed(!isCollapsed);
+    });
+    if (expandBtn) expandBtn.addEventListener('click', function () { setPanelCollapsed(false); });
+    try { if (localStorage.getItem('bchess-panel-collapsed') === '1') setPanelCollapsed(true); } catch (e) {}
 
     // Ocultar botón pantalla completa cuando no hay partida activa
     function updateFullscreenBtnVisibility() {
@@ -2501,6 +2582,21 @@
       S.settings.showLastMove = (S.settings.showLastMove === false);
       saveSettings(); renderSettingsUI(); renderBoard();
     });
+
+    // Privacidad: 4 toggles (persistidos en settings.privacy)
+    [['#toggle-share-photo', 'sharePhoto'],
+     ['#toggle-share-identity', 'shareIdentity'],
+     ['#toggle-share-stats', 'shareStats'],
+     ['#toggle-share-history', 'shareHistory']].forEach(function (pair) {
+      var el = $(pair[0]);
+      if (!el) return;
+      el.addEventListener('click', function () {
+        S.settings.privacy = S.settings.privacy || {};
+        var key = pair[1];
+        S.settings.privacy[key] = !(S.settings.privacy[key] !== false);
+        saveSettings(); renderSettingsUI();
+      });
+    });
     var railEdit = $('#btn-settings-rail');
     if (railEdit) railEdit.addEventListener('click', openRailModal);
     $('#volume').addEventListener('input', function () {
@@ -2641,6 +2737,17 @@
   }
 
   // ================= Persistencia settings =================
+  // Privacidad para partidas en línea (todo activado por defecto)
+  function privacySettings() {
+    var p = (S.settings && S.settings.privacy) || {};
+    return {
+      sharePhoto: p.sharePhoto !== false,
+      shareIdentity: p.shareIdentity !== false,
+      shareStats: p.shareStats !== false,
+      shareHistory: p.shareHistory !== false
+    };
+  }
+
   function loadSettings() {
     try {
       var raw = localStorage.getItem('bchess-v2-settings');
