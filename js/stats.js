@@ -69,31 +69,66 @@ window.BCHESS_STATS = (function () {
     chart.resize();
   }
 
-  // ================= Resumen (pie) =================
+  // ================= Resumen general (donut de resultados) =================
+  // Nota: una tarta con G/P/E + Blancas/Negras + vs-IA/En-línea mezcla tres
+  // agrupaciones distintas y los arcos sumarían el triple de partidas.
+  // Por eso el donut muestra SOLO el resultado, y el resto va en chips.
   function optionSummary(games, stats) {
     var data = [];
     if (stats.wins) data.push({ value: stats.wins, name: 'Ganadas', itemStyle: { color: C.win } });
     if (stats.losses) data.push({ value: stats.losses, name: 'Perdidas', itemStyle: { color: C.loss } });
     if (stats.draws) data.push({ value: stats.draws, name: 'Empates', itemStyle: { color: C.draw } });
-    var w = games.filter(function (g) { return g.localColor === 'w'; }).length;
-    var b = games.length - w;
-    if (w) data.push({ value: w, name: 'Blancas', itemStyle: { color: C.white } });
-    if (b) data.push({ value: b, name: 'Negras', itemStyle: { color: C.black } });
-    var ai = games.filter(function (g) { return g.mode === 'ai'; }).length;
-    var on = games.length - ai;
-    if (ai) data.push({ value: ai, name: 'vs IA', itemStyle: { color: C.ai } });
-    if (on) data.push({ value: on, name: 'En línea', itemStyle: { color: C.online } });
+    if (!data.length) return null;
+    var total = (stats.wins || 0) + (stats.losses || 0) + (stats.draws || 0);
+    var winrate = total ? Math.round((stats.wins / total) * 100) : 0;
+    var expl = {
+      'Ganadas': 'partidas que has ganado',
+      'Perdidas': 'partidas que has perdido',
+      'Empates': 'partidas terminadas en tablas'
+    };
     return {
+      tooltip: {
+        trigger: 'item',
+        formatter: function (p) {
+          var pct = total ? Math.round((p.value / total) * 100) : 0;
+          return '<b>' + p.name + ': ' + p.value + ' de ' + total + '</b> (' + pct + '%)<br/>' + (expl[p.name] || '');
+        }
+      },
+      title: {
+        text: String(total),
+        subtext: 'partidas\n' + winrate + '% victorias',
+        left: 'center',
+        top: 'center',
+        textStyle: { color: C.text, fontSize: 30, fontWeight: 700 },
+        subtextStyle: { color: C.muted, fontSize: 11, lineHeight: 15 }
+      },
       series: [{
         type: 'pie',
-        radius: ['20%', '85%'],
+        radius: ['52%', '85%'],
         center: ['50%', '50%'],
-        roseType: 'area',
-        itemStyle: { borderRadius: 6, borderColor: '#0d1117', borderWidth: 3 },
+        itemStyle: { borderRadius: 8, borderColor: '#0d1117', borderWidth: 3 },
         label: { show: true, color: C.text, fontSize: 12, formatter: '{b}\n{c}' },
         data: data
       }]
     };
+  }
+
+  function fillSummaryChips(games) {
+    var chips = document.getElementById('summary-chips');
+    if (!chips) return;
+    var w = games.filter(function (g) { return g.localColor === 'w'; }).length;
+    var b = games.length - w;
+    var ai = games.filter(function (g) { return g.mode === 'ai'; }).length;
+    var on = games.length - ai;
+    var items = [
+      ['Blancas', w, C.white],
+      ['Negras', b, C.black],
+      ['vs IA', ai, C.ai],
+      ['En línea', on, C.online]
+    ];
+    chips.innerHTML = items.map(function (it) {
+      return '<span class="summary-chip" style="border-color:' + it[2] + '55"><i style="background:' + it[2] + '"></i>' + it[0] + ': <b>' + it[1] + '</b></span>';
+    }).join('');
   }
 
   // ================= Flujo (sankey) =================
@@ -162,6 +197,15 @@ window.BCHESS_STATS = (function () {
       return { source: parts[0], target: parts[1], value: counts[k] };
     });
     return {
+      tooltip: {
+        trigger: 'item',
+        formatter: function (p) {
+          if (p.dataType === 'edge') {
+            return '<b>' + p.data.source + ' → ' + p.data.target + '</b><br/>Partidas: ' + p.data.value;
+          }
+          return '<b>' + p.name + '</b><br/>Partidas que pasan por este nodo';
+        }
+      },
       series: [{
         type: 'sankey',
         layout: 'none',
@@ -170,7 +214,7 @@ window.BCHESS_STATS = (function () {
         nodeWidth: 20,
         nodeGap: 12,
         layoutIterations: 32,
-        label: { color: C.text, fontSize: 11, position: 'right' },
+        label: { color: C.text, fontSize: 13, position: 'right' },
         lineStyle: { color: 'gradient', curveness: 0.5, opacity: 0.4 },
         itemStyle: { borderWidth: 1, borderColor: C.border },
         data: nodes,
@@ -180,58 +224,115 @@ window.BCHESS_STATS = (function () {
   }
 
   // ================= Aperturas (tree) =================
+  // Cuenta partidas por secuencia w1 → b1 → w2 → b2.
+  // El color de cada nodo codifica frecuencia de uso (azul = poco, rojo = mucho).
   function optionOpenings(games) {
     var root = {};
     games.forEach(function (g) {
       var sans = (g.movesSan && g.movesSan.length ? g.movesSan : extractSans(g.pgn)).slice(0, 6);
       if (!sans.length) return;
       var w1 = sans[0].replace(/[+#]/g, '');
-      var b1 = sans[1] ? sans[1].replace(/[+#]/g, '') : '(sin respuesta)';
+      var b1 = sans[1] ? sans[1].replace(/[+#]/g, '') : null;
       var w2 = sans[2] ? sans[2].replace(/[+#]/g, '') : null;
       var b2 = sans[3] ? sans[3].replace(/[+#]/g, '') : null;
-      root[w1] = root[w1] || {};
-      root[w1][b1] = root[w1][b1] || { count: 0 };
-      var branch = root[w1][b1];
-      branch.count = (branch.count || 0) + 1;
-      if (w2) branch[w2] = branch[w2] || {};
-      if (b2) branch[w2][b2] = (branch[w2][b2] || 0) + 1;
+      if (!root[w1]) root[w1] = { total: 0, children: {} };
+      var L1 = root[w1];
+      L1.total++;
+      if (!b1) return;
+      if (!L1.children[b1]) L1.children[b1] = { total: 0, children: {} };
+      var L2 = L1.children[b1];
+      L2.total++;
+      if (!w2) return;
+      if (!L2.children[w2]) L2.children[w2] = { total: 0, children: {} };
+      var L3 = L2.children[w2];
+      L3.total++;
+      if (!b2) return;
+      L3.children[b2] = (L3.children[b2] || 0) + 1;
     });
     var names = Object.keys(root);
     if (!names.length) return null;
+
+    // Máximo global para normalizar la escala de color
+    var maxCount = 1;
+    Object.keys(root).forEach(function (w1) {
+      maxCount = Math.max(maxCount, root[w1].total);
+      Object.keys(root[w1].children).forEach(function (b1) {
+        maxCount = Math.max(maxCount, root[w1].children[b1].total);
+        Object.keys(root[w1].children[b1].children).forEach(function (w2) {
+          maxCount = Math.max(maxCount, root[w1].children[b1].children[w2].total);
+          Object.keys(root[w1].children[b1].children[w2].children).forEach(function (b2) {
+            maxCount = Math.max(maxCount, root[w1].children[b1].children[w2].children[b2]);
+          });
+        });
+      });
+    });
+    function heatColor(v) {
+      var t = Math.min(1, (v || 0) / maxCount);
+      if (t < 0.2) return '#58a6ff';   // azul  — poco usada
+      if (t < 0.4) return '#79c0ff';   // celeste — algo usada
+      if (t < 0.65) return '#eac54f';  // amarillo — media
+      if (t < 0.85) return '#f0883e';  // naranja — muy usada
+      return '#f85149';                // rojo — la más usada
+    }
     var data = names.map(function (w1) {
-      var replies = root[w1];
+      var L1 = root[w1];
       return {
         name: '1. ' + w1,
-        children: Object.keys(replies).map(function (b1) {
-          var leaf = replies[b1];
-          var kids = Object.keys(leaf)
-            .filter(function (k) { return k !== 'count'; })
-            .sort(function (a, b) { return leaf[b] - leaf[a]; })
-            .slice(0, 4)
-            .map(function (w2) {
-              return { name: '2. ' + w2, children: Object.keys(leaf[w2]).sort(function (a, b) { return leaf[w2][b] - leaf[w2][a]; }).slice(0, 3).map(function (b2) { return { name: '2… ' + b2 }; }) };
-            });
-          return { name: '1… ' + b1, children: kids };
-        })
+        value: L1.total,
+        itemStyle: { color: heatColor(L1.total) },
+        children: Object.keys(L1.children)
+          .sort(function (a, b) { return L1.children[b].total - L1.children[a].total; })
+          .slice(0, 5)
+          .map(function (b1) {
+            var L2 = L1.children[b1];
+            return {
+              name: '1… ' + b1,
+              value: L2.total,
+              itemStyle: { color: heatColor(L2.total) },
+              children: Object.keys(L2.children)
+                .sort(function (a, b) { return L2.children[b].total - L2.children[a].total; })
+                .slice(0, 4)
+                .map(function (w2) {
+                  var L3 = L2.children[w2];
+                  return {
+                    name: '2. ' + w2,
+                    value: L3.total,
+                    itemStyle: { color: heatColor(L3.total) },
+                    children: Object.keys(L3.children)
+                      .sort(function (a, b) { return L3.children[b] - L3.children[a]; })
+                      .slice(0, 3)
+                      .map(function (b2) {
+                        var n = L3.children[b2];
+                        return { name: '2… ' + b2, value: n, itemStyle: { color: heatColor(n) } };
+                      })
+                  };
+                })
+            };
+          })
       };
     });
     return {
+      tooltip: {
+        trigger: 'item',
+        formatter: function (p) {
+          return '<b>' + p.name + '</b><br/>Partidas con esta jugada: ' + (p.value || 0) + '<br/>Color = frecuencia de uso';
+        }
+      },
       series: [{
         type: 'tree',
         data: data,
         top: '8%',
         left: '8%',
         bottom: '8%',
-        right: '20%',
-        symbolSize: 10,
+        right: '18%',
+        symbolSize: 12,
         orient: 'LR',
-        label: { position: 'left', verticalAlign: 'middle', align: 'right', color: C.text, fontSize: 11 },
-        leaves: { label: { position: 'right', verticalAlign: 'middle', align: 'left' } },
+        label: { position: 'left', verticalAlign: 'middle', align: 'right', color: C.text, fontSize: 12 },
+        leaves: { label: { position: 'right', verticalAlign: 'middle', align: 'left', fontSize: 12 } },
         expandAndCollapse: true,
         initialTreeDepth: 2,
         animationDuration: 550,
         animationDurationUpdate: 750,
-        itemStyle: { color: C.white, borderColor: C.white },
         lineStyle: { color: C.border, width: 2, curveness: 0.5 }
       }]
     };
@@ -264,7 +365,16 @@ window.BCHESS_STATS = (function () {
       };
     }
     return {
-      tooltip: { trigger: 'axis' },
+      tooltip: {
+        trigger: 'axis',
+        formatter: function (params) {
+          var head = '<b>Tras ' + params[0].axisValue + '</b><br/>';
+          var body = params.map(function (p) {
+            return p.marker + ' ' + p.seriesName + ': <b>' + (p.value == null ? '—' : p.value + '%') + '</b> de victorias';
+          }).join('<br/>');
+          return head + body;
+        }
+      },
       legend: { textStyle: { color: C.muted }, top: 0 },
       grid: { left: '4%', right: '4%', bottom: '5%', top: '18%', containLabel: true },
       xAxis: {
@@ -320,7 +430,16 @@ window.BCHESS_STATS = (function () {
     var draw = function (g) { return g.myResult === 'draw'; };
 
     return {
-      tooltip: { trigger: 'axis' },
+      tooltip: {
+        trigger: 'axis',
+        formatter: function (params) {
+          var head = '<b>Tras ' + params[0].axisValue + '</b><br/>Acumulado de partidas:<br/>';
+          var body = params.map(function (p) {
+            return p.marker + ' ' + p.seriesName + ': <b>' + p.value + '</b>';
+          }).join('<br/>');
+          return head + body;
+        }
+      },
       legend: { textStyle: { color: C.muted, fontSize: 11 }, top: 0, itemWidth: 18 },
       grid: { left: '4%', right: '4%', bottom: '5%', top: '24%', containLabel: true },
       xAxis: {
@@ -348,6 +467,78 @@ window.BCHESS_STATS = (function () {
     };
   }
 
+  // ================= Expandir gráfica en grande (modal) =================
+  var lastOptions = {};   // id → option (para clonar en el modal)
+  var chartTitles = {};   // id → { title, desc }
+  var modalChart = null;
+
+  function collectChartMeta() {
+    chartTitles = {};
+    document.querySelectorAll('.chart-block[data-chart]').forEach(function (block) {
+      var id = block.getAttribute('data-chart');
+      var t = block.querySelector('.chart-title');
+      var d = block.querySelector('.chart-desc');
+      chartTitles[id] = {
+        title: t ? t.textContent.trim() : id,
+        desc: d ? d.textContent.trim() : ''
+      };
+    });
+  }
+
+  function openExpandModal(id) {
+    var opt = lastOptions[id];
+    var body = document.getElementById('chart-expand-body');
+    var modal = document.getElementById('chart-expand-modal');
+    if (!body || !modal) return;
+    collectChartMeta();
+    var meta = chartTitles[id] || { title: id, desc: '' };
+    var titleEl = document.getElementById('chart-expand-title');
+    var descEl = document.getElementById('chart-expand-desc');
+    if (titleEl) titleEl.textContent = meta.title;
+    if (descEl) descEl.textContent = meta.desc;
+    modal.classList.add('show');
+    // Esperar a que el modal sea visible para que echarts mida el tamaño real
+    setTimeout(function () {
+      if (modalChart) { try { modalChart.dispose(); } catch (e) {} modalChart = null; }
+      if (!opt || !window.echarts) {
+        body.innerHTML = '<div class="chart-empty" style="position:static;height:100%">Sin datos para esta gráfica todavía. Juega partidas y vuelve a intentarlo.</div>';
+        return;
+      }
+      body.innerHTML = '';
+      modalChart = echarts.init(body, null, { renderer: 'canvas' });
+      modalChart.setOption(opt, true);
+      modalChart.resize();
+    }, 60);
+  }
+
+  function closeExpandModal() {
+    var modal = document.getElementById('chart-expand-modal');
+    if (modal) modal.classList.remove('show');
+    if (modalChart) { try { modalChart.dispose(); } catch (e) {} modalChart = null; }
+  }
+
+  function bindExpandHandlers() {
+    document.addEventListener('click', function (ev) {
+      var btn = ev.target.closest ? ev.target.closest('.chart-expand-btn') : null;
+      if (btn) {
+        var target = btn.getAttribute('data-expand');
+        if (target) openExpandModal(target);
+        return;
+      }
+      var closeBtn = ev.target.closest ? ev.target.closest('#chart-expand-close') : null;
+      if (closeBtn) closeExpandModal();
+    });
+    var modal = document.getElementById('chart-expand-modal');
+    if (modal) {
+      modal.addEventListener('click', function (e) {
+        if (e.target === modal) closeExpandModal();
+      });
+    }
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' || e.key === 'Esc') closeExpandModal();
+    });
+  }
+
   // ================= Render =================
   function render(games, profile) {
     loadEcharts().then(function () {
@@ -358,19 +549,22 @@ window.BCHESS_STATS = (function () {
       var progress = optionProgress(games);
       var colorForm = optionColorForm(games);
       rendered = true;
+      fillSummaryChips(games);
 
       var spec = [
-        ['chart-summary', summary, 'Sin datos todavía'],
-        ['chart-flow', games.length ? flow : null, 'Sin datos todavía'],
-        ['chart-openings', openings, 'Sin aperturas registradas'],
-        ['chart-progress', progress, 'Sin datos todavía'],
-        ['chart-colorform', colorForm, 'Sin datos todavía']
+        ['chart-summary', summary, 'Sin partidas todavía: juega una y aparecerán aquí'],
+        ['chart-flow', games.length ? flow : null, 'Sin datos todavía: juega partidas para ver el flujo'],
+        ['chart-openings', openings, 'Sin aperturas registradas: juega partidas con más de una jugada'],
+        ['chart-progress', progress, 'Sin datos todavía: juega partidas para ver tu progreso'],
+        ['chart-colorform', colorForm, 'Sin datos todavía: juega partidas con ambos colores']
       ];
+      lastOptions = {};
       spec.forEach(function (s) {
         var id = s[0], opt = s[1], emptyMsg = s[2];
         var el = document.getElementById(id);
         if (!el) return;
         if (!opt) { dispose(id); markEmpty(el, emptyMsg); return; }
+        lastOptions[id] = opt;
         mount(id, opt);
       });
     }).catch(function (err) {
@@ -396,7 +590,10 @@ window.BCHESS_STATS = (function () {
     Object.keys(instances).forEach(function (id) {
       try { instances[id].resize(); } catch (e) {}
     });
+    if (modalChart) { try { modalChart.resize(); } catch (e) {} }
   });
+
+  bindExpandHandlers();
 
   return { render: render, onProfileShown: onProfileShown };
 })();

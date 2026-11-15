@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=20261129">
+  <link rel="stylesheet" href="css/app.css?v=20261130">
 
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
@@ -596,25 +596,58 @@
           <div id="profile-empty" class="profile-empty hidden" data-dev="profile-empty">Aún no hay partidas guardadas.<br>Juega una y aparecerá aquí.</div>
 
           <div id="profile-stats-panel" class="stats-panel hidden" data-dev="profile-stats-panel">
-            <div class="chart-block" data-dev="chart-summary">
-              <h3 class="chart-title">Resumen general <span class="chart-desc">(Victorias, Tablas, Derrotas, % Winrate)</span></h3>
-              <div id="chart-summary" class="chart" style="height:360px;"></div>
-            </div>
-            <div class="chart-block" data-dev="chart-flow">
-              <h3 class="chart-title">Flujo de partidas <span class="chart-desc">(Evolución del rating estimado por partida)</span></h3>
-              <div id="chart-flow" class="chart" style="height:420px;"></div>
-            </div>
-            <div class="chart-block" data-dev="chart-openings">
-              <h3 class="chart-title">Aperturas más usadas <span class="chart-desc">(Top 10 por frecuencia)</span></h3>
-              <div id="chart-openings" class="chart" style="height:420px;"></div>
-            </div>
-            <div class="chart-block" data-dev="chart-progress">
-              <h3 class="chart-title">Progreso de resultados <span class="chart-desc">(Acumulado: V / T / D a lo largo del tiempo)</span></h3>
-              <div id="chart-progress" class="chart" style="height:360px;"></div>
-            </div>
-            <div class="chart-block" data-dev="chart-colorform">
-              <h3 class="chart-title">Resultados por color <span class="chart-desc">(V/Perdidas/Empates × blancas y negras, acumulado)</span></h3>
-              <div id="chart-colorform" class="chart" style="height:400px;"></div>
+            <div class="chart-grid">
+              <div class="chart-block" data-dev="chart-summary" data-chart="chart-summary">
+                <div class="chart-head">
+                  <div>
+                    <h3 class="chart-title">Resumen general</h3>
+                    <p class="chart-desc">Cuántas partidas has <b>ganado</b>, <b>empatado</b> o <b>perdido</b>, cuántas jugaste con <b>blancas</b> o <b>negras</b>, y cuántas fueron <b>vs IA</b> o <b>en línea</b>. Suma de cada categoría, no un porcentaje.</p>
+                  </div>
+                  <button class="icon-btn chart-expand-btn" data-expand="chart-summary" title="Ver en grande" aria-label="Ver Resumen general en grande">⤢</button>
+                </div>
+                <div id="chart-summary" class="chart" style="height:340px;"></div>
+                <div class="summary-chips" id="summary-chips"></div>
+              </div>
+              <div class="chart-block" data-dev="chart-flow" data-chart="chart-flow">
+                <div class="chart-head">
+                  <div>
+                    <h3 class="chart-title">Flujo de partidas</h3>
+                    <p class="chart-desc">Cómo se reparte cada partida: <b>tu color</b> → <b>tu resultado</b> → <b>cómo terminó</b> (mate, tiempo, abandono…). Las bandas son partidas reales, no porcentajes.</p>
+                  </div>
+                  <button class="icon-btn chart-expand-btn" data-expand="chart-flow" title="Ver en grande" aria-label="Ver Flujo de partidas en grande">⤢</button>
+                </div>
+                <div id="chart-flow" class="chart" style="height:340px;"></div>
+              </div>
+              <div class="chart-block" data-dev="chart-openings" data-chart="chart-openings">
+                <div class="chart-head">
+                  <div>
+                    <h3 class="chart-title">Aperturas más usadas</h3>
+                    <p class="chart-desc">Primer y segundo jugada de tus partidas. El color indica frecuencia: <span class="heat-chip heat-cold">azul</span> = poco usada, <span class="heat-chip heat-mid">naranja</span> = media, <span class="heat-chip heat-hot">rojo</span> = muy usada. Pasa el mouse sobre cada nodo para ver cuántas veces.</p>
+                  </div>
+                  <button class="icon-btn chart-expand-btn" data-expand="chart-openings" title="Ver en grande" aria-label="Ver Aperturas en grande">⤢</button>
+                </div>
+                <div id="chart-openings" class="chart" style="height:360px;"></div>
+              </div>
+              <div class="chart-block" data-dev="chart-progress" data-chart="chart-progress">
+                <div class="chart-head">
+                  <div>
+                    <h3 class="chart-title">Progreso de resultados</h3>
+                    <p class="chart-desc">% de victorias acumulado a medida que avanzas las partidas (P1, P2, P3…). Compara tu rendimiento <b>total</b>, <b>vs IA</b> y <b>en línea</b>.</p>
+                  </div>
+                  <button class="icon-btn chart-expand-btn" data-expand="chart-progress" title="Ver en grande" aria-label="Ver Progreso en grande">⤢</button>
+                </div>
+                <div id="chart-progress" class="chart" style="height:340px;"></div>
+              </div>
+              <div class="chart-block chart-block-wide" data-dev="chart-colorform" data-chart="chart-colorform">
+                <div class="chart-head">
+                  <div>
+                    <h3 class="chart-title">Resultados por color</h3>
+                    <p class="chart-desc">Acumulado de <b>ganadas / empatadas / perdidas</b> jugando con blancas (líneas sólidas) y con negras (líneas discontinuas). Sirve para ver si rindes mejor con un color.</p>
+                  </div>
+                  <button class="icon-btn chart-expand-btn" data-expand="chart-colorform" title="Ver en grande" aria-label="Ver Resultados por color en grande">⤢</button>
+                </div>
+                <div id="chart-colorform" class="chart" style="height:360px;"></div>
+              </div>
             </div>
             <button id="btn-reset-stats" class="btn btn-danger btn-small" style="margin-top:16px;" data-dev="btn-reset-stats">Reiniciar estadísticas y borrar historial</button>
           </div>
@@ -746,15 +779,29 @@
     </div>
   </div>
 
-  <script src="js/firebase-config.js?v=20261129"></script>
-  <script src="js/pieces.js?v=20261129"></script>
-  <script src="js/sounds.js?v=20261129"></script>
-  <script src="js/engine.js?v=20261129"></script>
-  <script src="js/net.js?v=20261129"></script>
-  <script src="js/profile.js?v=20261129"></script>
-  <script src="js/stats.js?v=20261129"></script>
-  <script src="js/inspector.js?v=20261129"></script>
-  <script src="js/app.js?v=20261129"></script>
-  <script src="js/update.js?v=20261129"></script>
+  <div id="chart-expand-modal" class="modal chart-expand-modal" data-dev="chart-expand-modal">
+    <div class="modal-content chart-expand-content">
+      <div class="chart-expand-head">
+        <div>
+          <h2 id="chart-expand-title">Gráfica</h2>
+          <p id="chart-expand-desc" class="chart-desc"></p>
+        </div>
+        <button id="chart-expand-close" class="icon-btn" aria-label="Cerrar" data-dev="chart-expand-close">—</button>
+      </div>
+      <div id="chart-expand-body" class="chart chart-expand-body"></div>
+    </div>
+  </div>
+
+  <script src="js/firebase-config.js?v=20261130"></script>
+  <script src="js/pieces.js?v=20261130"></script>
+  <script src="js/sounds.js?v=20261130"></script>
+  <script src="js/engine.js?v=20261130"></script>
+  <script src="js/net.js?v=20261130"></script>
+  <script src="js/lan.js?v=20261130"></script>
+  <script src="js/profile.js?v=20261130"></script>
+  <script src="js/stats.js?v=20261130"></script>
+  <script src="js/inspector.js?v=20261130"></script>
+  <script src="js/app.js?v=20261130"></script>
+  <script src="js/update.js?v=20261130"></script>
 </body>
 </html>
