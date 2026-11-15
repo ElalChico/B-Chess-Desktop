@@ -92,49 +92,12 @@
     try { window.scrollTo(0, 0); } catch (e) {}
   }
 
-  // ================= Fullscreen / Panel handle =================
+  // ================= Fullscreen =================
   function toggleFullscreen() {
     var isFull = document.body.classList.toggle('fullscreen');
-    var handle = $('#panel-handle');
-    if (handle) handle.title = isFull ? 'Salir pantalla completa / Barra de herramientas' : 'Pantalla completa / Barra de herramientas';
     // Ajustar tablero
     if (S.hasBoard) renderBoard();
     showToast(isFull ? 'Pantalla completa activada' : 'Pantalla completa desactivada');
-  }
-
-  function initPanelHandle() {
-    var handle = $('#panel-handle');
-    if (!handle) return;
-    var startX = null;
-    handle.addEventListener('pointerdown', function (e) {
-      startX = e.clientX;
-      handle.setPointerCapture(e.pointerId);
-    });
-    handle.addEventListener('pointermove', function (e) {
-      if (startX === null) return;
-      var dx = startX - e.clientX;
-      if (dx > 24) { startX = null; setPanelCollapsed(false); }
-    });
-    handle.addEventListener('pointerup', function (e) {
-      var moved = startX !== null ? Math.abs(e.clientX - startX) : 0;
-      startX = null;
-      // Toque simple = restaurar el panel de historial (y el botón desaparece)
-      if (moved <= 6) setPanelCollapsed(false);
-    });
-    handle.addEventListener('pointercancel', function () { startX = null; });
-    handle.addEventListener('click', function (e) {
-      // Evitar que el click dispare fullscreen si ya se movió
-    });
-  }
-
-  function setPanelCollapsed(collapsed) {
-    S.settings.historyCollapsed = !!collapsed;
-    saveSettings();
-    var panel = $('#game-panel');
-    var handle = $('#panel-handle');
-    if (panel) panel.classList.toggle('collapsed', S.settings.historyCollapsed);
-    if (handle) handle.classList.toggle('show', S.settings.historyCollapsed);
-    document.body.classList.toggle('panel-collapsed', S.settings.historyCollapsed);
   }
 
   // ================= Barra lateral =================
@@ -183,7 +146,7 @@
     switch (id) {
       case 'home': setScreen('home'); break;
       case 'ai': setScreen('setup'); break;
-      case 'online': $('#online-status').textContent = ''; $('#online-status').className = 'online-status'; setScreen('online'); break;
+      case 'online': setScreen('online'); break;
       case 'board': if (S.hasBoard) setScreen('game'); break;
       case 'profile': BCHESS_PROFILE.refreshProfile(); setScreen('profile'); break;
       case 'history': BCHESS_PROFILE.refreshHistory(); setScreen('history'); break;
@@ -237,6 +200,22 @@
     var prev = S.connState;
     S.connState = state.state || 'idle';
     updateRailAntenna();
+    // Insignias de estado en Home y en Conexión
+    var homeDot = document.querySelector('#home-conn-state .conn-dot');
+    var homeTxt = document.getElementById('home-conn-state');
+    var netTxt = document.getElementById('conn-p2p-state');
+    if (S.connState === 'connected') {
+      if (homeDot) homeDot.classList.add('on');
+      if (homeTxt) homeTxt.innerHTML = '<span class="conn-dot on"></span>P2P conectado';
+      if (netTxt) netTxt.textContent = 'Conectado';
+    } else {
+      if (homeDot) homeDot.classList.remove('on');
+      if (homeTxt) homeTxt.innerHTML = '<span class="conn-dot"></span>P2P desconectado';
+      if (netTxt) {
+        if (S.connState === 'connecting' || S.connState === 'failed') netTxt.textContent = 'Conexión…';
+        else netTxt.textContent = 'Desconectado';
+      }
+    }
     if (S.connState === 'connected') {
       showConnAnim('success', 'Conexión establecida', 'Sincronizando perfiles…');
     } else if (S.connState === 'failed') {
@@ -1095,8 +1074,8 @@
 
   function showLobbyError(msg, primaryId) {
     // Mostrar el error en la pantalla actual (crear / unir / online)
-    var ids = ['create-status', 'join-status', 'online-status'];
-    var primary = primaryId || ({ 'create-room': 'create-status', 'join-room': 'join-status' }[S.currentScreen] || 'online-status');
+    var ids = ['create-status', 'join-status'];
+    var primary = primaryId || ({ 'create-room': 'create-status', 'join-room': 'join-status' }[S.currentScreen] || 'create-status');
     var order = [primary].concat(ids.filter(function (id) { return id !== primary; }));
     order.forEach(function (id) {
       var el = document.getElementById(id);
@@ -1936,7 +1915,7 @@
     // Navegación
     S.currentScreen = 'home';
     $('#btn-play-ai').addEventListener('click', function () { setScreen('setup'); });
-    $('#btn-play-online').addEventListener('click', function () { $('#online-status').textContent = ''; $('#online-status').className = 'online-status'; setScreen('online'); });
+    $('#btn-play-online').addEventListener('click', function () { setScreen('online'); });
     $('#btn-settings-home').addEventListener('click', function () { renderSettingsUI(); setScreen('settings'); });
     $('#btn-settings-footer').addEventListener('click', function () { renderSettingsUI(); setScreen('settings'); });
     var topProfile = $('#btn-top-profile');
@@ -1958,12 +1937,6 @@
     $('#btn-settings-back').addEventListener('click', function () { setScreen('home'); });
     $('#btn-leave').addEventListener('click', function () { stopAutoPlay(); setScreen('home'); });
     $('#btn-lobby-back').addEventListener('click', function () { BCHESS_NET.cleanup(true); setScreen('online'); });
-
-    // Colapsar / expandir panel de historial
-    var btnCollapsePanel = $('#btn-collapse-panel');
-    if (btnCollapsePanel) btnCollapsePanel.addEventListener('click', function () {
-      setPanelCollapsed(!S.settings.historyCollapsed);
-    });
 
     // Pantalla completa durante la partida
     var btnFullscreenGame = $('#btn-fullscreen-game');
@@ -2109,10 +2082,6 @@
     if (closeRail) closeRail.addEventListener('click', function () { $('#rail-modal').classList.remove('show'); });
     var resetRail = $('#btn-reset-rail');
     if (resetRail) resetRail.addEventListener('click', function () { saveRailConfig(RAIL_DEFAULT.slice()); renderRailList($('#rail-list')); renderRail(); updateRailActive(); });
-
-    // Panel handle / fullscreen
-    initPanelHandle();
-    setPanelCollapsed(!!S.settings.historyCollapsed);
 
     // Perfil guardado sincroniza
     window.addEventListener('bchess:profile-saved', function (e) {
