@@ -62,14 +62,14 @@ B-Chess V2 · Pendientes de comunicación y seguridad
     - Elegir elemento → ver su data-dev y copiarlo.
     - Atajo F2 ya implementado (js/inspector.js).
 
-[ ] PWA / INSTALACIÓN
+[x] PWA / INSTALACIÓN (hecho 2026-11-15)
     - Iconos PNG 192/512, service worker para offline básico.
-    - Publicar en Firebase Hosting si quieres URL pública.
+    - Instalable desde Chrome/Edge en https://elalchico.github.io/B-Chess-Desktop/
 
-[ ] STOCKFISH 18 WASM (opcional)
-    - Archivo LFS de 113 MB: no incluido por peso.
-    - Si se quiere: descargar desde el repo GM-3000 y ajustar js/engine.js.
+[x] ATLAS ELIMINADO (2026-11-15)
+    - Atlas colapsaba casi siempre. Reemplazado por un UNICO Stockfish escalonado (~400 - 3190 Elo).
 
-[ ] ATLAS COMO MOTOR SEPARADO
-    - Atlas hoy es Stockfish con Skill Level 14 (como GM-3000).
-    - Si Atlas.1 pasa a ser un motor propio (negamax), añadirlo como worker.
+[ ] MODO DE CONEXIÓN (P2P / Bluetooth / IP, solo uno activo a la vez)
+    - Hoy solo P2P funciona (creación/unión por código).
+    - UI ya muestra los tres; selector uno a la vez, el activo queda verde.
+    - Bluetooth (BLE/Classic) y IP (puente Node/Electron o WebSocket LAN) pendientes: ahí podrías seguir programando.
