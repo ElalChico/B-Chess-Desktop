@@ -3,6 +3,8 @@ const { app, BrowserWindow, ipcMain, shell, dialog } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const net = require('net');
+const fs = require('fs');
+const os = require('os');
 
 let mainWindow = null;
 let updateNotified = false;
@@ -42,6 +44,39 @@ function createWindow() {
     shell.openExternal(url);
     return { action: 'deny' };
   });
+}
+
+// ================= Limpieza de cachés de actualización obsoletas =================
+// El auto-updater descarga el instalador nuevo en una caché temporal; si no se barren,
+// cada versión deja su .exe ocupando espacio. Al arrancar, eliminamos cualquier
+// residuo de actualizaciones ya aplicadas (queda instalada la última versión).
+function cleanupUpdaterCaches() {
+  try {
+    var localAppData = process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local');
+    var candidates = [
+      path.join(os.tmpdir(), 'b-chess-desktop-updater'),
+      path.join(os.tmpdir(), 'B-Chess-Desktop-updater'),
+      path.join(localAppData, 'b-chess-desktop-updater'),
+      path.join(localAppData, 'B-Chess-Desktop-updater'),
+      path.join(localAppData, 'b-chess-desktop', 'pending'),
+      path.join(localAppData, 'B-Chess-Desktop', 'pending')
+    ];
+    candidates.forEach(function (dir) {
+      try {
+        if (!dir || !fs.existsSync(dir)) return;
+        // Barra todo el contenido de la caché de actualizadores (ya están aplicadas)
+        fs.readdirSync(dir).forEach(function (entry) {
+          try { fs.rmSync(path.join(dir, entry), { recursive: true, force: true }); } catch (e) {}
+        });
+        try { fs.rmdirSync(dir); } catch (e) {}
+        console.log('[updater] caché limpiada:', dir);
+      } catch (e) {
+        console.error('[updater] no se pudo limpiar', dir, e.message || e);
+      }
+    });
+  } catch (e) {
+    console.error('[updater] cleanupUpdaterCaches:', e.message || e);
+  }
 }
 
 // ================= Auto-update desde GitHub Releases (igual que el APK) =================
@@ -246,6 +281,8 @@ ipcMain.handle('lan-disconnect', async function () {
 app.whenReady().then(function () {
   createWindow();
   setupAutoUpdater();
+  // Borra instaladores de versiones anteriores de la caché de actualización
+  cleanupUpdaterCaches();
 });
 
 app.on('window-all-closed', function () {

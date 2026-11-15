@@ -11,6 +11,38 @@
   var _lanNet = window.BCHESS_LAN;
   var currentTransport = 'p2p'; // 'p2p' | 'lan'
 
+  // Estado de conexión por transporte (lo que muestras las antenas: no depende del modo elegido)
+  var transportStates = { p2p: 'idle', lan: 'idle' };
+
+  function antStateFor(connState) {
+    if (connState === 'connected') return 'connected';
+    if (connState === 'connecting' || connState === 'failed') return connState === 'failed' ? 'failed' : 'connecting';
+    return 'idle';
+  }
+
+  function antLabel(state) {
+    if (state === 'connected') return 'Conectado';
+    if (state === 'connecting') return 'Conectando…';
+    if (state === 'failed') return 'Error';
+    return 'Apagado';
+  }
+
+  function updateAntennas() {
+    ['p2p', 'lan'].forEach(function (m) {
+      var el = document.getElementById('antenna-' + m);
+      if (!el) return;
+      var st = transportStates[m] || 'idle';
+      el.setAttribute('data-state', st);
+      var lbl = el.querySelector('.ant-state');
+      if (lbl) lbl.textContent = antLabel(st);
+    });
+  }
+
+  function setTransportState(mode, connState) {
+    transportStates[mode] = antStateFor(connState);
+    updateAntennas();
+  }
+
   // Activa un transporte swappando la implementación global BCHESS_NET
   function applyTransport(mode) {
     currentTransport = mode;
@@ -25,10 +57,14 @@
     var lanBtn = document.getElementById('conn-mode-lan');
     if (p2pBtn) p2pBtn.classList.toggle('conn-mode-active', mode === 'p2p');
     if (lanBtn) lanBtn.classList.toggle('conn-mode-active', mode === 'lan');
+    updateAntennas();
 
-    // Estado en Home (opacidad del indicador)
+    // Estado en Home (opacidad del indicador) — según transporte actual
     var homeDot = document.querySelector('#home-conn-state .conn-dot');
-    if (homeDot) homeDot.classList.toggle('on', mode === 'p2p' && window.BCHESS_NET && window.BCHESS_NET.isConnected && window.BCHESS_NET.isConnected());
+    var isConn = transportStates[mode] === 'connected';
+    if (homeDot) homeDot.classList.toggle('on', isConn);
+    var homeTxt = document.getElementById('home-conn-state');
+    if (homeTxt) homeTxt.innerHTML = '<span class="conn-dot' + (isConn ? ' on' : '') + '"></span>' + (mode === 'lan' ? 'LAN' : 'P2P') + (isConn ? ' conectado' : ' desconectado');
   }
 
   // ================= Estado global =================  
@@ -224,23 +260,30 @@
   function applyConnState(state) {
     var prev = S.connState;
     S.connState = state.state || 'idle';
+    var transport = S.transport || currentTransport || 'p2p';
+    setTransportState(transport, S.connState);
     updateRailAntenna();
-    // Insignias de estado en Home y en Conexión
+
+    var transportName = transport === 'lan' ? 'LAN' : 'P2P';
+    var subId = transport === 'lan' ? 'conn-lan-state' : 'conn-p2p-state';
+
+    // Insignias de estado en Home y en la tarjeta del modo actual
     var homeDot = document.querySelector('#home-conn-state .conn-dot');
     var homeTxt = document.getElementById('home-conn-state');
-    var netTxt = document.getElementById('conn-p2p-state');
-    if (S.connState === 'connected') {
-      if (homeDot) homeDot.classList.add('on');
-      if (homeTxt) homeTxt.innerHTML = '<span class="conn-dot on"></span>P2P conectado';
-      if (netTxt) netTxt.textContent = 'Conectado';
-    } else {
-      if (homeDot) homeDot.classList.remove('on');
-      if (homeTxt) homeTxt.innerHTML = '<span class="conn-dot"></span>P2P desconectado';
-      if (netTxt) {
-        if (S.connState === 'connecting' || S.connState === 'failed') netTxt.textContent = 'Conexión…';
-        else netTxt.textContent = 'Desconectado';
-      }
+    var modeSub = document.getElementById(subId);
+    var isConnected = S.connState === 'connected';
+    if (homeDot) homeDot.classList.toggle('on', isConnected);
+    if (homeTxt) homeTxt.innerHTML = '<span class="conn-dot' + (isConnected ? ' on' : '') + '"></span>' + transportName + (isConnected ? ' conectado' : ' desconectado');
+    if (modeSub) {
+      if (isConnected) modeSub.textContent = 'Conectado';
+      else if (S.connState === 'connecting' || S.connState === 'failed') modeSub.textContent = 'Conexión…';
+      else modeSub.textContent = 'Desconectado';
     }
+    // El otro transporte queda "apagado" salvo que tenga su propio estado guardado
+    var other = transport === 'lan' ? 'p2p' : 'lan';
+    var otherSub = document.getElementById(other === 'lan' ? 'conn-lan-state' : 'conn-p2p-state');
+    if (otherSub) otherSub.textContent = transportStates[other] === 'connected' ? 'Conectado' : (transportStates[other] === 'connecting' ? 'Conexión…' : 'Desconectado');
+
     if (S.connState === 'connected') {
       showConnAnim('success', 'Conexión establecida', 'Sincronizando perfiles…');
     } else if (S.connState === 'failed') {
@@ -398,6 +441,9 @@
       var mover = S.game.turn() === 'w' ? 'b' : 'w';
       S.clocks[mover] = Math.min(S.clocks[mover] + S.incrementMs, 9999999);
     }
+
+    // Anfitrión: emitir CLOCK inmediatamente tras la jugada (el invitado reconcilia en <1 tick)
+    if (S.mode === 'online' && BCHESS_NET.isHost()) emitClockNow();
 
     updateMoveList();
     checkGameEnd(result, fromRemote);
@@ -610,6 +656,16 @@
     return { timeMs: base * 1000, incrementMs: inc * 1000 };
   }
 
+  // Emisión inmediata del estado de relojes (autoridad = anfitrión)
+  function emitClockNow(ts) {
+    if (S.mode !== 'online' || !BCHESS_NET.isHost()) return;
+    try {
+      BCHESS_NET.sendLine(JSON.stringify({ v: 2, type: 'CLOCK',
+        whiteMs: S.clocks.w, blackMs: S.clocks.b,
+        side: S.game ? S.game.turn() : 'w', ts: ts || Date.now(), paused: false }));
+    } catch (e) {}
+  }
+
   function startClock() {
     stopClock();
     if (S.timeMs <= 0) return;
@@ -622,9 +678,27 @@
 
   function tickClock() {
     if (S.gameOver || !S.game) return;
-    // El anfitrión es dueño del reloj (como el APK); el invitado se sincroniza por CLOCK
+    // El anfitrión es dueño del reloj (como el APK); el invitado cuenta en local
+    // pero se reconcilia con cada CLOCK que emite el anfitrión (1 Hz).
     var isOnlineGuest = S.mode === 'online' && !BCHESS_NET.isHost();
-    if (isOnlineGuest) return;
+    if (isOnlineGuest) {
+      if (S.timeMs > 0) {
+        var side = S.game.turn();
+        if (S.clocks[side] > 0) {
+          S.clocks[side] = Math.max(0, S.clocks[side] - 100);
+          updateClockDisplay();
+          var localMs = S.localColor === 'w' ? S.clocks.w : S.clocks.b;
+          if (localMs > 0 && localMs <= 10000) {
+            var curSec = Math.floor(localMs / 1000);
+            if (curSec < S.lastLowtimeSec) BCHESS_SOUNDS.play('lowtime');
+            S.lastLowtimeSec = curSec;
+          } else {
+            S.lastLowtimeSec = 99;
+          }
+        }
+      }
+      return;
+    }
 
     var side = S.game.turn();
     S.clocks[side] = Math.max(0, S.clocks[side] - 100);
@@ -641,11 +715,7 @@
       var now = Date.now();
       if (!S.clockSyncTs || now - S.clockSyncTs >= 1000) {
         S.clockSyncTs = now;
-        try {
-          BCHESS_NET.sendLine(JSON.stringify({ v: 2, type: 'CLOCK',
-            whiteMs: S.clocks.w, blackMs: S.clocks.b,
-            side: S.game.turn(), ts: now, paused: false }));
-        } catch (e) {}
+        emitClockNow(now);
       }
     }
 
@@ -1336,12 +1406,17 @@
         break;
 
       case 'CLOCK':
-        // El invitado sincroniza los relojes desde el anfitrión (autoridad)
+        // El invitado sincroniza los relojes desde el anfitrión (autoridad).
+        // Entre paquetes cuenta en local (ver tickClock); al recibir CLOCK:
+        //  - deriva grande (>1.2 s) → salta al valor del anfitrión (snap)
+        //  - deriva pequeña → fusión 50% (suave, sin saltos visibles)
         if (S.mode === 'online' && !BCHESS_NET.isHost()) {
           var w = parseInt(msg.whiteMs, 10) || 0;
           var b = parseInt(msg.blackMs, 10) || 0;
-          S.clocks.w = Math.max(0, w);
-          S.clocks.b = Math.max(0, b);
+          var SNAP_MS = 1200, BLEND = 0.5;
+          var dw = w - S.clocks.w, db = b - S.clocks.b;
+          S.clocks.w = Math.abs(dw) > SNAP_MS ? Math.max(0, w) : Math.max(0, Math.round(S.clocks.w + dw * BLEND));
+          S.clocks.b = Math.abs(db) > SNAP_MS ? Math.max(0, b) : Math.max(0, Math.round(S.clocks.b + db * BLEND));
           var localMs = S.localColor === 'w' ? S.clocks.w : S.clocks.b;
           // Beeps de bajo tiempo local (igual que el APK)
           if (S.timeMs > 0 && localMs > 0 && localMs <= 10000) {
@@ -2218,9 +2293,9 @@
     // Estado de conexión inicial
     applyTransport('p2p');
 
-    // Estado de conexión P2P y LAN
-    try { BCHESS_NET.onState(applyConnState); } catch (e) {}
-    try { window.BCHESS_LAN && window.BCHESS_LAN.onState(applyConnState); } catch (e) {}
+    // Estado de conexión de ambos transportes (cada evento se etiqueta por origen)
+    try { _p2pNet.onState(function (s) { var st = (s && s.state) || 'idle'; if (S.transport === 'p2p') applyConnState(s); else setTransportState('p2p', st); }); } catch (e) {}
+    try { if (_lanNet) _lanNet.onState(function (s) { var st = (s && s.state) || 'idle'; if (S.transport === 'lan') applyConnState(s); else setTransportState('lan', st); }); } catch (e) {}
 
     // Avatar superior
     BCHESS_PROFILE.refreshProfile();

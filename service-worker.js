@@ -5,7 +5,7 @@
  * Auto-update de verdad: al instalar un SW nuevo, toma el control al instante.
  * Al publicar una nueva versión en GitHub Pages, basta con recargar para recibirla.
  */
-const VERSION = 'b-chess-desktop-v2.1.0-2026-11-15';
+const VERSION = 'b-chess-desktop-v2.2.0-2026-11-15';
 const CORE = [
   './',
   './index.html',
@@ -70,16 +70,17 @@ self.addEventListener('fetch', function (event) {
     return;
   }
 
+  // Estáticos: network-first (las actualizaciones se aplican siempre;
+  // si no hay red, se sirve la copia en caché — app sigue funcionando offline)
   event.respondWith(
-    caches.match(req).then(function (cached) {
-      if (cached) return cached;
-      return fetch(req).then(function (res) {
-        if (res && res.ok) {
-          var clone = res.clone();
-          caches.open(VERSION).then(function (cache) { cache.put(req, clone); });
-        }
-        return res;
-      });
+    fetch(req).then(function (res) {
+      if (res && res.ok) {
+        var clone = res.clone();
+        caches.open(VERSION).then(function (cache) { cache.put(req, clone); });
+      }
+      return res;
+    }).catch(function () {
+      return caches.match(req);
     })
   );
 });
