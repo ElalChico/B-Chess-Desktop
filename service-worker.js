@@ -5,7 +5,7 @@
  * Auto-update de verdad: al instalar un SW nuevo, toma el control al instante.
  * Al publicar una nueva versiÃ³n en GitHub Pages, basta con recargar para recibirla.
  */
-const VERSION = 'b-chess-desktop-v2.2.2-2026-11-15';
+const VERSION = 'b-chess-desktop-v2.2.3-2026-11-16';
 const CORE = [
   './',
   './index.html',

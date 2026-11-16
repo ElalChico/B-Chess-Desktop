@@ -301,7 +301,10 @@
     var labelEl = host.querySelector('.conn-anim-label');
     var subEl = host.querySelector('.conn-anim-sub');
     var isFail = kind === 'static-red';
-    if (cat) cat.src = isFail ? 'assets/animations/kitten-static-red.png' : 'assets/animations/kitten-success.png';
+    if (cat) {
+      cat.classList.remove('success', 'static-red');
+      cat.classList.add(isFail ? 'static-red' : 'success');
+    }
     if (labelEl) labelEl.textContent = label;
     if (subEl) subEl.textContent = sub || '';
     host.className = 'conn-anim show ' + kind;
