@@ -1,9 +1,9 @@
 /*
- * B-Chess Desktop â€” Service Worker (PWA)
+ * B-Chess Desktop — Service Worker (PWA)
  * Estrategia: HTML/JSON "network-first" (se actualiza al instante en cada visita),
- * assets estÃ¡ticos "cache-first".
+ * assets estáticos "network-first" con caché de respaldo (offline).
  * Auto-update de verdad: al instalar un SW nuevo, toma el control al instante.
- * Al publicar una nueva versiÃ³n en GitHub Pages, basta con recargar para recibirla.
+ * Al publicar una nueva versión en GitHub Pages, basta con recargar para recibirla.
  */
 const VERSION = 'b-chess-desktop-v2.2.5-2026-11-16';
 const CORE = [
@@ -79,8 +79,8 @@ self.addEventListener('fetch', function (event) {
     return;
   }
 
-  // EstÃ¡ticos: network-first (las actualizaciones se aplican siempre;
-  // si no hay red, se sirve la copia en cachÃ© â€” app sigue funcionando offline)
+  // Estáticos: network-first (las actualizaciones se aplican siempre;
+  // si no hay red, se sirve la copia en caché — app sigue funcionando offline)
   event.respondWith(
     fetch(req).then(function (res) {
       safelyCache(VERSION, req, res);
