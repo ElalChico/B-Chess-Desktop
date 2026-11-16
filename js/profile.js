@@ -310,21 +310,30 @@ window.BCHESS_PROFILE = (function () {
   try { viewMode = localStorage.getItem('bchess-history-view') || 'grid'; } catch (e) {}
 
   function bindViewToggle() {
-    var container = document.querySelector('[data-dev="history-view-toggle"]');
-    if (!container) return;
-    // Restaurar estado activo guardado
-    Array.prototype.forEach.call(container.querySelectorAll('button[data-view]'), function (b) {
-      b.classList.toggle('selected', b.getAttribute('data-view') === viewMode);
-    });
-    container.addEventListener('click', function (e) {
-      var btn = e.target.closest('button[data-view]');
-      if (!btn) return;
-      viewMode = btn.getAttribute('data-view') || 'grid';
-      try { localStorage.setItem('bchess-history-view', viewMode); } catch (e2) {}
+    var containers = document.querySelectorAll('.history-view-toggle');
+    if (!containers.length) return;
+    // Restaurar estado activo guardado en todos los selectores de vista
+    Array.prototype.forEach.call(containers, function (container) {
       Array.prototype.forEach.call(container.querySelectorAll('button[data-view]'), function (b) {
-        b.classList.toggle('selected', b === btn);
+        b.classList.toggle('selected', b.getAttribute('data-view') === viewMode);
       });
-      refreshHistory();
+      container.addEventListener('click', function (e) {
+        var btn = e.target.closest('button[data-view]');
+        if (!btn) return;
+        viewMode = btn.getAttribute('data-view') || 'grid';
+        try { localStorage.setItem('bchess-history-view', viewMode); } catch (e2) {}
+        // Sincronizar todos los toggles visibles (historial y perfil)
+        Array.prototype.forEach.call(containers, function (c2) {
+          Array.prototype.forEach.call(c2.querySelectorAll('button[data-view]'), function (b2) {
+            b2.classList.toggle('selected', b2.getAttribute('data-view') === viewMode);
+          });
+        });
+        // Aplicar la vista de inmediato en ambos grids (layout depende del contenedor)
+        ['profile-games-grid', 'history-grid'].forEach(function (id) {
+          var g = document.getElementById(id);
+          if (g) g.className = 'games-grid view-' + viewMode;
+        });
+      });
     });
   }
 

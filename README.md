@@ -1,31 +1,50 @@
 # B-Chess Desktop
 
-**B-Chess en el escritorio**: el mismo motor y las mismas piezas que el [B-Chess APK](https://github.com/ElalChico/B-Chess) (`app/`), en una aplicación de escritorio real.
+**B-Chess en el escritorio**: el mismo motor y las mismas piezas que el [B-Chess APK](https://github.com/ElalChico/B-Chess) (`app/`), en una aplicación de escritorio real para Windows.
 
-> Este repositorio es SOLO la versión PC. El repositorio del APK es otro repositorio: [ElalChico/B-Chess](https://github.com/ElalChico/B-Chess).
+> Este repositorio es SOLO la versión PC. El repositorio del APK es [ElalChico/B-Chess](https://github.com/ElalChico/B-Chess).
+
+## Descarga
+
+[![Descargar B-Chess Desktop](https://img.shields.io/badge/Descargar-B--Chess--Desktop--Setup.exe-2ea043?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/ElalChico/B-Chess-Desktop/releases/latest/download/B-Chess-Desktop-Setup.exe)
+
+**Descarga directa →** [**B-Chess-Desktop-Setup.exe**](https://github.com/ElalChico/B-Chess-Desktop/releases/latest/download/B-Chess-Desktop-Setup.exe) (siempre apunta a la última versión)
+
+[![Última versión](https://img.shields.io/github/v/release/ElalChico/B-Chess-Desktop?style=flat-square)](https://github.com/ElalChico/B-Chess-Desktop/releases/latest)
+[![Descargas](https://img.shields.io/github/downloads/ElalChico/B-Chess-Desktop/total?style=flat-square)](https://github.com/ElalChico/B-Chess-Desktop/releases)
+[![Licencia MIT](https://img.shields.io/badge/Licencia-MIT-blue.svg?style=flat-square)](LICENSE)
 
 ## Qué es
 
 - **VS IA** — motor **Stockfish** adaptado con fuerza ajustable (~400–3190 Elo, 10 niveles).
-- **En línea P2P** — sala de 6 caracteres propia o del sistema vs rival humano, conexión directa dispositivo↔dispositivo, compatible con el APK móvil.
+- **En línea P2P** — salas de 6 caracteres, conexión directa dispositivo↔dispositivo vía WebRTC, compatible con el APK móvil (mismo protocolo `v:2`).
+- **LAN / Red local** — juega PC↔PC y PC↔APK por **TCP directo** (puerto 5891), sin Internet. El anfitrión ve su IP local con un toque; el invitado solo introduce `IP:puerto`.
 - **Torneos** — partidas individuales o por rondas con colores alternados y marcador.
-- **Historial local** — PGN + miniaturas + estadísticas gráficas (resumen, flujo, aperturas, progreso y resultados por color).
+- **Historial local** — PGN + miniaturas + estadísticas gráficas (resumen, flujo, aperturas, progreso, resultados por color) con gráficos grandes en tarjetas iguales.
 - **Premove** — encadena jugadas por adelantado como en Lichess.
-- **Relojes** con autoridad del anfitrión (sincronizados por red).
+- **Relojes** con autoridad del anfitrión y sincronización por red.
+- **Privacidad en línea** — eliges qué compartes con el rival: foto, identidad (@handle/nombre), estadísticas G/E/P e historial de partidas. Todo viene activado por defecto.
+- **Actualizaciones automáticas** — como en el APK: la app comprueba cada release y se actualiza sola, **reemplazando la instalación anterior** (sin copias viejas ocupando espacio).
+- **Icono Stockfish** propio como avatar del rival vs IA; fotos y usernames en tablero y fin de partida.
+- **Historial** con vistas Tarjetas / Compacta / Lista.
+- **Panel de movimientos colapsable** para dar todo el ancho al tablero.
+- **Perfil HUD** — rediseño serio tipo juego: avatar octogonal, estadísticas estilo HUD.
 
 ## Instalación
 
 ### Opción A — Instalador nativo para Windows (recomendada)
 
-1. Descarga `B-Chess-Desktop-Setup-x64.exe` desde **[Releases · B-Chess Desktop](https://github.com/ElalChico/B-Chess-Desktop/releases/latest)**.
-2. Ejecuta el instalador. Se crea en el menú Inicio con su icono.
-3. **Actualizaciones automáticas estilo APK**: al instalarse, la app comprueba automáticamente los releases de este repo; cuando se publique una versión nueva, la app descargará e instalará **sin desinstalar** — tu historial y ajustes se conservan.
+1. Descarga el instalador con el botón de arriba o desde **[Releases · B-Chess Desktop](https://github.com/ElalChico/B-Chess-Desktop/releases/latest)**.
+2. Ejecuta `B-Chess-Desktop-Setup.exe`. Se crea en el menú Inicio con su icono.
+3. **Actualizaciones automáticas:** al instalarse, la app comprueba automáticamente los releases de este repo; cuando se publica una versión nueva, la app la descarga e instala **sin desinstalar** — tu historial, avatar y ajustes se conservan. Las actualizaciones usan un `blockmap` (descarga solo lo que cambia).
+
+> **Nota:** para partidas por LAN / PC↔APK debes usar la Opción A (la PWA en el navegador no tiene acceso a sockets TCP). Bluetooth no está disponible en escritorio.
 
 ### Opción B — PWA en el navegador
 
 1. Abre **https://elalchico.github.io/B-Chess-Desktop/** en Chrome o Edge.
 2. Pulsa el icono **Instalar B-Chess Desktop** en la barra.
-3. Se instala como una app propia y se actualiza sola al abrirla en cada release (service worker).
+3. Se instala como una app propia y se actualiza sola al abrirla (service worker).
 
 ## Desarrollo
 
@@ -33,34 +52,25 @@
 python -m http.server 8090   # abre http://127.0.0.1:8090/
 npm install
 npm start                    # abre la app Electron de escritorio
-npm run build                # genera dist/B-Chess-Desktop-Setup-x64.exe
+npm run build                # genera dist/B-Chess-Desktop-Setup.exe
 npm run release              # build + publica release en GitHub (requiere GH_TOKEN)
 ```
-
-## Qué comparte con el APK
-
-Los mismos assets (piezas, sonidos, temas), el motor, y el protocolo P2P (`v:2`), para partidas entre PC y móvil sin diferencias.
 
 ## Conexión: modos disponibles
 
 | Modo | Estado | Descripción |
 |------|--------|-------------|
 | **P2P (Internet)** | ✅ Funciona | Código de 6 caracteres, WebRTC + Firebase signaling. Compatible PC↔PC y PC↔APK. |
-| **Bluetooth** | 🚧 Planeado | Requiere app nativa (Tauri/Electron) con Bluetooth Classic/SPP. Web Bluetooth API solo soporta BLE, no SPP clásico. |
-| **LAN (IP Local)** | 🚧 Planeado | WebSocket servidor en Node/Electron (`ws://IP:5891`). Sin Internet, solo LAN. |
+| **LAN (IP Local)** | ✅ Funciona (en el .exe) | TCP directo puerto 5891. Compatible PC↔PC y PC↔APK. Requiere red local. |
+| **Bluetooth** | ❌ Descartado | Web Bluetooth API solo soporta BLE (no SPP clásico), inviable para juego. |
 
-> **Nota**: Hoy solo **P2P (Internet)** está implementado y funcional. Bluetooth (SPP clásico) y LAN (WebSocket local) requieren app nativa (Tauri/Electron) y están planificados.
+> En la PWA del navegador, LAN no está disponible (los navegadores no exponen sockets TCP). La Opción A (.exe) incluye LAN.
 
 ## Motores IA disponibles
 
 | Motor | Tipo | Rango Elo | Control | Comentario |
 |-------|------|-----------|---------|------------|
 | **Stockfish** (incluido) | AB + NNUE | ~400 – 3190 | `UCI_LimitStrength` + Skill 0–20 | Estándar, cubre todo el rango. |
-| **Maia Chess** | Red neuronal (human-like) | 1100–1900 (brackets) | Modelo fijo por Elo | Juega "como humano" en brackets 1100–1900. |
-| **Ethereal / Koivisto / Seer** | Híbrido AB+NNUE | Configurable | `UCI_LimitStrength` | Open source, fuerte, ligero. |
-| **LCZero (Leela)** | MCTS + NNUE | Muy alto | GPU/WASM SIMD | Muy fuerte, requiere GPU/WASM SIMD. |
-
-> **Recomendación**: **Stockfish solo ya cubre todo el rango 400–3190 Elo** con `UCI_LimitStrength + Skill Level 0–20`. Maia es opcional si buscas "juego humano" en rangos 1100–1900.
 
 ## Licencia
 

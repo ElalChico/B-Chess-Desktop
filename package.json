@@ -1,7 +1,7 @@
 {
   "name": "b-chess-desktop",
   "productName": "B-Chess Desktop",
-  "version": "2.2.4",
+  "version": "2.2.5",
   "description": "B-Chess en el escritorio: ajedrez contra la IA o P2P, compatible con el APK. Se actualiza solo vÃ­a GitHub Releases.",
   "author": "Elal Chico",
   "license": "MIT",
@@ -29,7 +29,7 @@
         }
       ],
       "icon": "icono.ico",
-      "artifactName": "B-Chess-Desktop-Setup-${version}.exe",
+      "artifactName": "B-Chess-Desktop-Setup.exe",
       "signAndEditExecutable": false
     },
     "nsis": {

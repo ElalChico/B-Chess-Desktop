@@ -1383,10 +1383,27 @@ body.fullscreen .game-panel { max-height: calc(100vh - 16px); }
 .games-grid.view-compact .game-card-opp { font-size: 8px; }
 .games-grid.view-compact .game-card-badge { font-size: 7px; padding: 1px 5px; }
 .games-grid.view-list { grid-template-columns: 1fr !important; gap: 8px !important; }
-.games-grid.view-list .game-card.list-row { display: flex !important; align-items: center; gap: 14px; padding: 8px 10px !important; min-height: 96px; text-align: left; }
+.games-grid.view-list .game-card { display: flex !important; align-items: center; gap: 14px; padding: 8px 10px !important; min-height: 96px; text-align: left; }
 .view-list .game-thumb { width: 92px !important; height: 92px !important; flex: 0 0 92px; aspect-ratio: auto !important; border-radius: 6px; overflow: hidden; }
 .view-list .game-card-badge { position: static !important; order: 3; margin-left: auto; flex: 0 0 auto; padding: 5px 13px !important; font-size: 11px !important; border-radius: 6px !important; }
 .view-list .game-card-footer { position: static !important; background: none !important; align-items: center !important; gap: 14px !important; padding: 0 !important; flex: 1 1 auto; min-width: 0; }
 .view-list .game-card-mode { display: inline !important; font-size: 10px; font-weight: 800; color: var(--muted); letter-spacing: .6px; text-transform: uppercase; }
 .view-list .game-card-opp { font-size: 15px !important; }
 .view-list .game-card-date { font-size: 12px !important; }
+
+/* ===== Avatar del perfil: redondo (override del octógono HUD) ===== */
+.profile-avatar {
+  clip-path: none !important;
+  border-radius: 50% !important;
+  border: 2px solid #383c46 !important;
+  background: linear-gradient(160deg, #1d2027, #131519) !important;
+}
+
+/* ===== Perfil: fila filtros + toggle de vista ===== */
+.profile-filters-wrap { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.profile-filters-wrap .profile-filters { margin-bottom: 0; }
+.profile-view-toggle { margin: 0 !important; }
+@media (max-width: 720px) {
+  .profile-filters-wrap { flex-direction: column; align-items: stretch; }
+  .profile-filters-wrap .profile-view-toggle { align-self: flex-start; }
+}
