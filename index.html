@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=20261136">
+  <link rel="stylesheet" href="css/app.css?v=20261137">
 
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
@@ -63,7 +63,7 @@
 
             <div class="home-footer">
               <span id="home-conn-state" class="home-conn-state" data-dev="home-conn-state"><span class="conn-dot"></span>P2P desconectado</span>
-              <span id="version-badge" class="version-badge">B-Chess Desktop v2.2.3</span>
+              <span id="version-badge" class="version-badge">B-Chess Desktop v2.2.4</span>
               <button id="btn-settings-footer" class="icon-btn" title="Ajustes" aria-label="Ajustes" data-dev="btn-settings-footer">
                 <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.9 1.9M16.6 16.6l1.9 1.9M18.5 5.5l-1.9 1.9M7.4 16.6l-1.9 1.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
               </button>
@@ -729,11 +729,19 @@
             <button data-f="ai">vs IA</button>
             <button data-f="online">En línea</button>
           </div>
-          <div class="grid-toggle" data-dev="grid-toggle">
-            <button data-layout="3">3</button>
-            <button data-layout="4" class="selected">4</button>
-            <button data-layout="5">5</button>
-            <button data-layout="6">6</button>
+          <div class="history-view-toggle" id="history-view-toggle" data-dev="history-view-toggle" role="group" aria-label="Modo de vista del historial">
+            <button data-view="grid" class="selected" title="Tarjetas grandes" aria-label="Tarjetas grandes">
+              <svg viewBox="0 0 16 16" width="17" height="17" aria-hidden="true"><rect x="1.5" y="1.5" width="5.4" height="5.4" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="9.1" y="1.5" width="5.4" height="5.4" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="1.5" y="9.1" width="5.4" height="5.4" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.5"/><rect x="9.1" y="9.1" width="5.4" height="5.4" rx="1.2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+              <span>Tarjetas</span>
+            </button>
+            <button data-view="compact" title="Vista compacta" aria-label="Vista compacta">
+              <svg viewBox="0 0 16 16" width="17" height="17" aria-hidden="true"><rect x="1.5" y="1.5" width="3" height="3" rx="0.8" fill="currentColor" stroke="none"/><rect x="6.5" y="1.5" width="3" height="3" rx="0.8" fill="currentColor" stroke="none"/><rect x="11.5" y="1.5" width="3" height="3" rx="0.8" fill="currentColor" stroke="none"/><rect x="1.5" y="6.5" width="3" height="3" rx="0.8" fill="currentColor" stroke="none"/><rect x="6.5" y="6.5" width="3" height="3" rx="0.8" fill="currentColor" stroke="none"/><rect x="11.5" y="6.5" width="3" height="3" rx="0.8" fill="currentColor" stroke="none"/><rect x="1.5" y="11.5" width="3" height="3" rx="0.8" fill="currentColor" stroke="none"/><rect x="6.5" y="11.5" width="3" height="3" rx="0.8" fill="currentColor" stroke="none"/><rect x="11.5" y="11.5" width="3" height="3" rx="0.8" fill="currentColor" stroke="none"/></svg>
+              <span>Compacta</span>
+            </button>
+            <button data-view="list" title="Vista de lista" aria-label="Vista de lista">
+              <svg viewBox="0 0 16 16" width="17" height="17" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              <span>Lista</span>
+            </button>
           </div>
           <div id="history-grid" class="games-grid" data-dev="history-grid"></div>
           <div id="history-empty" class="profile-empty hidden" data-dev="history-empty">Aún no hay partidas guardadas.</div>
@@ -857,16 +865,16 @@
     </div>
   </div>
 
-  <script src="js/firebase-config.js?v=20261136"></script>
-  <script src="js/pieces.js?v=20261136"></script>
-  <script src="js/sounds.js?v=20261136"></script>
-  <script src="js/engine.js?v=20261136"></script>
-  <script src="js/net.js?v=20261136"></script>
-  <script src="js/lan.js?v=20261136"></script>
-  <script src="js/profile.js?v=20261136"></script>
-  <script src="js/stats.js?v=20261136"></script>
-  <script src="js/inspector.js?v=20261136"></script>
-  <script src="js/app.js?v=20261136"></script>
-  <script src="js/update.js?v=20261136"></script>
+  <script src="js/firebase-config.js?v=20261137"></script>
+  <script src="js/pieces.js?v=20261137"></script>
+  <script src="js/sounds.js?v=20261137"></script>
+  <script src="js/engine.js?v=20261137"></script>
+  <script src="js/net.js?v=20261137"></script>
+  <script src="js/lan.js?v=20261137"></script>
+  <script src="js/profile.js?v=20261137"></script>
+  <script src="js/stats.js?v=20261137"></script>
+  <script src="js/inspector.js?v=20261137"></script>
+  <script src="js/app.js?v=20261137"></script>
+  <script src="js/update.js?v=20261137"></script>
 </body>
 </html>

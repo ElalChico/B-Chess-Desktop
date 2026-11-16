@@ -263,10 +263,10 @@ window.BCHESS_PROFILE = (function () {
     return winner === 'w' ? 'b' : 'w';
   }
 
-  function buildGameCard(record, layout) {
+  function buildGameCard(record, viewMode) {
     var profile = getProfile();
     var card = document.createElement('button');
-    card.className = 'game-card ' + record.myResult + (layout === 'list' ? ' list-row' : '');
+    card.className = 'game-card ' + record.myResult + (viewMode === 'list' ? ' list-row' : '') + ' view-' + viewMode;
     card.type = 'button';
 
     var thumb = buildThumb(record.finalFen, record.result);
@@ -299,33 +299,32 @@ window.BCHESS_PROFILE = (function () {
       return true;
     });
     container.innerHTML = '';
-    var cols = parseInt(gridLayout, 10) || 4;
-    container.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
-    filtered.forEach(function (g) { container.appendChild(buildGameCard(g, gridLayout)); });
+    container.className = 'games-grid view-' + (viewMode || 'grid');
+    filtered.forEach(function (g) { container.appendChild(buildGameCard(g, viewMode)); });
     emptyEl.classList.toggle('hidden', filtered.length > 0);
   }
 
   var filters = { profile: 'all', history: 'all' };
-  var gridLayout = '4'; // '3' | '4' | '5' | '6'
+  var viewMode = 'grid'; // 'grid' | 'compact' | 'list'
 
-  function bindGridLayout() {
-    var container = document.querySelector('[data-dev="grid-toggle"]');
+  try { viewMode = localStorage.getItem('bchess-history-view') || 'grid'; } catch (e) {}
+
+  function bindViewToggle() {
+    var container = document.querySelector('[data-dev="history-view-toggle"]');
     if (!container) return;
+    // Restaurar estado activo guardado
+    Array.prototype.forEach.call(container.querySelectorAll('button[data-view]'), function (b) {
+      b.classList.toggle('selected', b.getAttribute('data-view') === viewMode);
+    });
     container.addEventListener('click', function (e) {
-      var btn = e.target.closest('button'); if (!btn) return;
-      var layout = btn.getAttribute('data-layout');
-      if (!layout) return;
-      gridLayout = layout;
-      // Update active state
-      Array.prototype.forEach.call(container.querySelectorAll('button'), function (b) {
+      var btn = e.target.closest('button[data-view]');
+      if (!btn) return;
+      viewMode = btn.getAttribute('data-view') || 'grid';
+      try { localStorage.setItem('bchess-history-view', viewMode); } catch (e2) {}
+      Array.prototype.forEach.call(container.querySelectorAll('button[data-view]'), function (b) {
         b.classList.toggle('selected', b === btn);
       });
-      // Re-render history
-      var historyGrid = document.getElementById('history-grid');
-      var historyEmpty = document.getElementById('history-empty');
-      if (historyGrid && historyEmpty) {
-        refreshHistory();
-      }
+      refreshHistory();
     });
   }
 
@@ -395,6 +394,8 @@ window.BCHESS_PROFILE = (function () {
     if (which === 'stats' && window.BCHESS_STATS) {
       window.BCHESS_STATS.render(getGames(), getProfile());
     }
+    // El rail de navegación refleja la pestaña visible (Perfil vs Estadísticas)
+    try { if (window.__updateRailActive) window.__updateRailActive(); } catch (e) {}
   }
 
   function refreshProfile() {
@@ -659,7 +660,7 @@ window.BCHESS_PROFILE = (function () {
   function init() {
     bindFilterGroup('profile-filters', 'profile', refreshProfile);
     bindFilterGroup('history-filters', 'history', refreshHistory);
-    bindGridLayout();
+    bindViewToggle();
 
     var tabGames = document.getElementById('profile-tab-games');
     var tabStats = document.getElementById('profile-tab-stats');

@@ -164,7 +164,7 @@
 
   // ================= Barra lateral =================
   var RAIL_KEY = 'bchess-v2-rail';
-  var RAIL_DEFAULT = ['home', 'ai', 'online', 'board', 'history', 'profile', 'settings'];
+  var RAIL_DEFAULT = ['home', 'profile', 'online', 'ai', 'board', 'history', 'stats', 'settings'];
 
   var RAIL_CATALOG = [
     { id: 'home', label: 'Inicio', svg: '<path d="M4 11l8-7 8 7M6 10v9h12v-9" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>' },
@@ -172,14 +172,33 @@
     { id: 'online', label: 'Conexión', svg: '<path d="M2.5 9.5a14.5 14.5 0 0 1 19 0M5.5 13a10 10 0 0 1 13 0M8.5 16.5a5 5 0 0 1 7 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="20" r="1.4" fill="currentColor"/>' },
     { id: 'board', label: 'Tablero', svg: '<rect x="3.5" y="3.5" width="17" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 9.5h17M3.5 14.5h17M9.5 3.5v17M14.5 3.5v17" stroke="currentColor" stroke-width="1.4"/>' },
     { id: 'history', label: 'Historial', svg: '<circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 7.5V12l3 2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>' },
+    { id: 'stats', label: 'Estadísticas', svg: '<path d="M5 20v-6M10 20V9M15 20v-9M20 20V4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>' },
     { id: 'profile', label: 'Perfil', svg: '<circle cx="12" cy="8" r="3.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>' },
     { id: 'settings', label: 'Ajustes', svg: '<path d="M4 4h16M4 12h16M4 20h16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M8 4v16M16 4v16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>' }
   ];
 
   var RAIL_SCREENS = {
     home: 'home', ai: 'setup', online: 'online', board: 'game',
-    profile: 'profile', history: 'history', settings: 'settings'
+    profile: 'profile', history: 'history', stats: 'profile', settings: 'settings'
   };
+
+  // Estado "activo" real: stats/perfil dependen de la pestaña visible; tablero requiere partida
+  function railActiveFor(id) {
+    var cur = S.currentScreen;
+    if (!cur) return false;
+    if (id === 'stats') {
+      if (cur !== 'profile') return false;
+      var panel = document.getElementById('profile-stats-panel');
+      return !!panel && !panel.classList.contains('hidden');
+    }
+    if (id === 'profile') {
+      if (cur !== 'profile') return false;
+      var panel2 = document.getElementById('profile-stats-panel');
+      return !panel2 || panel2.classList.contains('hidden');
+    }
+    if (id === 'board') return cur === 'game' && S.hasBoard && !!S.game;
+    return RAIL_SCREENS[id] === cur;
+  }
 
   function getRailConfig() {
     var def = RAIL_DEFAULT.slice();
@@ -191,6 +210,11 @@
       var valid = list.filter(function (id) { return RAIL_CATALOG.some(function (c) { return c.id === id; }); });
       if (!valid.length) return def;
       if (valid.indexOf('settings') === -1) valid.push('settings');
+      if (valid.indexOf('stats') === -1) {
+        var si = valid.indexOf('settings');
+        if (si === -1) valid.push('stats');
+        else valid.splice(si, 0, 'stats');
+      }
       return valid;
     } catch (e) { return def; }
   }
@@ -212,6 +236,12 @@
       case 'board': if (S.hasBoard) setScreen('game'); break;
       case 'profile': BCHESS_PROFILE.refreshProfile(); setScreen('profile'); break;
       case 'history': BCHESS_PROFILE.refreshHistory(); setScreen('history'); break;
+      case 'stats':
+        BCHESS_PROFILE.refreshProfile();
+        setScreen('profile');
+        var statsTab = document.getElementById('profile-tab-stats');
+        if (statsTab) statsTab.click();
+        break;
       case 'settings': renderSettingsUI(); setScreen('settings'); break;
     }
   }
@@ -225,7 +255,7 @@
       var item = null;
       for (var i = 0; i < RAIL_CATALOG.length; i++) if (RAIL_CATALOG[i].id === id) { item = RAIL_CATALOG[i]; break; }
       if (!item) return;
-      var active = S.currentScreen === RAIL_SCREENS[id] ? ' active' : '';
+      var active = railActiveFor(id) ? ' active' : '';
       var disabled = (id === 'board' && !S.hasBoard) ? ' disabled' : '';
       var antenna = id === 'online' ? '<span class="rail-antenna" data-state="idle" title="Sin conexión"></span>' : '';
       var liveDot = id === 'board' ? '<span class="rail-live-dot hidden" title="Partida en curso"></span>' : '';
@@ -247,8 +277,8 @@
     var live = !!(S.hasBoard && S.game && !S.gameOver && !S.reviewingGame && S.currentScreen !== 'game');
     Array.prototype.forEach.call(rail.querySelectorAll('[data-rail]'), function (btn) {
       var id = btn.getAttribute('data-rail');
-      var active = S.currentScreen && RAIL_SCREENS[id] === S.currentScreen;
-      var disabled = id === 'board' && !S.hasBoard;
+      var active = railActiveFor(id);
+      var disabled = id === 'board' && !(S.hasBoard && S.game);
       var liveDot = btn.querySelector('.rail-live-dot');
       if (liveDot) liveDot.classList.toggle('hidden', id !== 'board' || !live);
       btn.classList.toggle('active', !!active && !disabled);
@@ -3193,6 +3223,7 @@
   // Expose internal functions globally for event handlers
   window.__onSquarePress = onSquarePress;
   window.__renderBoard = renderBoard;
+  window.__updateRailActive = updateRailActive;
   // Also expose renderBoard as global for direct calls
   window.renderBoard = renderBoard;
 })();

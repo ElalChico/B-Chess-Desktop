@@ -1301,3 +1301,92 @@ body.fullscreen .game-panel { max-height: calc(100vh - 16px); }
 .end-option:hover { transform: translateY(-1px) !important; border-color: var(--ok) !important; background: #1e2127 !important; }
 .end-option-highlight { background: #211d10 !important; }
 .btn-end-close { border-radius: 12px !important; padding: 10px 26px !important; }
+
+/* ===== Perfil: rediseño futurista serio (sin brillo/neón) ===== */
+.profile-card {
+  display: flex !important; gap: 26px !important; align-items: center !important;
+  padding: 26px 26px !important;
+  background:
+    repeating-linear-gradient(-45deg, rgba(255,255,255,.018) 0 2px, transparent 2px 12px),
+    linear-gradient(180deg, #15171d 0%, #11131a 100%) !important;
+  border: 1px solid #2b2e36 !important;
+  border-radius: 18px !important;
+  box-shadow: 0 14px 40px rgba(0,0,0,.4) !important;
+  position: relative !important; overflow: hidden !important;
+}
+/* Esquinas tipo HUD: corchetes de calibración (TL y BR) */
+.profile-card::before, .profile-card::after {
+  content: '' !important; position: absolute !important; width: 46px !important; height: 46px !important;
+  border: 2px solid #3d434f !important; background: transparent !important; -webkit-mask: none !important; mask: none !important; padding: 0 !important;
+  pointer-events: none !important; z-index: 1 !important;
+}
+.profile-card::before { top: 10px; left: 10px; border-right: none !important; border-bottom: none !important; border-radius: 3px 0 0 0 !important; }
+.profile-card::after  { bottom: 10px; right: 10px; border-left: none !important; border-top: none !important; border-radius: 0 0 3px 0 !important; }
+
+.profile-avatar {
+  flex: 0 0 auto !important;
+  width: 118px !important; height: 118px !important;
+  border-radius: 0 !important;
+  clip-path: polygon(25% 0, 75% 0, 100% 25%, 100% 75%, 75% 100%, 25% 100%, 0 75%, 0 25%) !important;
+  border: none !important; box-shadow: none !important;
+  background: linear-gradient(160deg, #2e323c, #1a1c23) !important;
+  display: flex !important; align-items: center !important; justify-content: center !important;
+  font-size: 46px !important; font-weight: 800 !important; color: #dfe3ea !important;
+}
+.profile-avatar.has-photo { background: linear-gradient(160deg, #2e323c, #1a1c23) center/cover no-repeat !important; background-size: cover !important; background-position: center !important; }
+
+.profile-topline { margin-bottom: 8px !important; }
+.profile-handle {
+  font-size: 23px !important; font-weight: 800 !important; letter-spacing: 3px !important;
+  text-transform: uppercase; color: #f2f4f8 !important; line-height: 1.15 !important;
+}
+.profile-bio {
+  font-size: 13px !important; color: #9aa0ab !important; letter-spacing: .3px;
+  border-left: 2px solid #2e323c; padding-left: 12px; min-height: 18px;
+}
+
+/* Franja de estadísticas estilo HUD */
+.profile-stats {
+  display: flex !important; gap: 0 !important; margin-top: 16px !important;
+  padding: 0 !important; border-top: none !important;
+  background: #0d0f14; border: 1px solid #262a32; border-radius: 8px; overflow: hidden;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 16px) 100%, 0 100%);
+}
+.profile-stats .stat {
+  display: flex !important; flex-direction: column !important; align-items: flex-start !important; gap: 3px !important;
+  padding: 12px 20px !important;
+}
+.profile-stats .stat + .stat { border-left: 1px solid #23262d !important; }
+.profile-stats .stat b { font-family: var(--font-mono) !important; font-size: 21px !important; font-weight: 700 !important; color: #eef0f4 !important; line-height: 1 !important; }
+.profile-stats .stat span { font-size: 9px !important; font-weight: 700 !important; color: #7c828e !important; letter-spacing: 1.6px !important; text-transform: uppercase; }
+.profile-stats .stat.win b { color: #8fd0ab !important; }
+.profile-stats .stat.draw b { color: #d9c46a !important; }
+.profile-stats .stat.loss b { color: #e0a396 !important; }
+
+/* Botón editar perfil: angular, sobrio */
+#btn-edit-profile {
+  border-radius: 8px !important; border: 1px solid #2b2e36 !important; color: #a9afba !important;
+  width: 40px !important; height: 40px !important; font-size: 16px !important;
+  background: #171a20 !important; transition: background-color .15s, color .15s, border-color .15s;
+}
+#btn-edit-profile:hover { background: #1e2128 !important; color: #e6e6e6 !important; border-color: #3a3d47 !important; }
+
+/* ===== Historial: toggle de vista + modos ===== */
+.history-view-toggle { display: flex; gap: 6px; margin: 4px 0 14px; padding: 5px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 14px; width: max-content; }
+.history-view-toggle button[data-view] { display: inline-flex; align-items: center; gap: 9px; padding: 9px 16px; border-radius: 10px; background: transparent; border: 1px solid transparent; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .3px; font-family: var(--font-body); cursor: pointer; transition: background-color .15s, color .15s, border-color .15s; }
+.history-view-toggle button[data-view] svg { display: block; }
+.history-view-toggle button[data-view]:hover { color: var(--text); background: rgba(255,255,255,.03); }
+.history-view-toggle button[data-view].selected { background: #1b1e25; border-color: var(--line-2); color: var(--text); }
+
+.games-grid.view-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important; gap: 12px !important; }
+.games-grid.view-compact { grid-template-columns: repeat(auto-fill, minmax(124px, 1fr)) !important; gap: 6px !important; }
+.games-grid.view-compact .game-card-opp { font-size: 8px; }
+.games-grid.view-compact .game-card-badge { font-size: 7px; padding: 1px 5px; }
+.games-grid.view-list { grid-template-columns: 1fr !important; gap: 8px !important; }
+.games-grid.view-list .game-card.list-row { display: flex !important; align-items: center; gap: 14px; padding: 8px 10px !important; min-height: 96px; text-align: left; }
+.view-list .game-thumb { width: 92px !important; height: 92px !important; flex: 0 0 92px; aspect-ratio: auto !important; border-radius: 6px; overflow: hidden; }
+.view-list .game-card-badge { position: static !important; order: 3; margin-left: auto; flex: 0 0 auto; padding: 5px 13px !important; font-size: 11px !important; border-radius: 6px !important; }
+.view-list .game-card-footer { position: static !important; background: none !important; align-items: center !important; gap: 14px !important; padding: 0 !important; flex: 1 1 auto; min-width: 0; }
+.view-list .game-card-mode { display: inline !important; font-size: 10px; font-weight: 800; color: var(--muted); letter-spacing: .6px; text-transform: uppercase; }
+.view-list .game-card-opp { font-size: 15px !important; }
+.view-list .game-card-date { font-size: 12px !important; }
