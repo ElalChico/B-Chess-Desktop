@@ -9,18 +9,21 @@ window.BCHESS_ENGINE = (function () {
   let initResolve = null;
   let pending = null;
 
-  // Escalera de dificultad aproximada por Elo
+  // Escalera de dificultad aproximada por Elo.
+  // Debajo del mínimo de UCI_Elo (1350) se desactiva LimitStrength y se usa
+  // Skill Level bajo + más jugadas aleatorias: el motor falla de verdad
+  // y cada nivel juega distinto (400 ≠ 800 ≠ 1200).
   const LADDER = [
-    { elo: 400,  label: 'Iniciación ≈400',    blunder: 0.78, eloOpt: null,  skill: 0 },
-    { elo: 800,  label: 'Principiante ≈800',  blunder: 0.55, eloOpt: null,  skill: 0 },
-    { elo: 1200, label: 'Aprendiz ≈1200',     blunder: 0.30, eloOpt: null,  skill: 0 },
-    { elo: 1350, label: 'Casual ≈1350',       blunder: 0,    eloOpt: 1320,  skill: 0 },
-    { elo: 1600, label: 'Normal ≈1600',       blunder: 0,    eloOpt: 1600,  skill: 3 },
-    { elo: 1800, label: 'Intermedio ≈1800',   blunder: 0,    eloOpt: 1800,  skill: 5 },
-    { elo: 2050, label: 'Avanzado ≈2050',     blunder: 0,    eloOpt: 2050,  skill: 8 },
-    { elo: 2300, label: 'Competitivo ≈2300',  blunder: 0,    eloOpt: 2300,  skill: 11 },
-    { elo: 2600, label: 'Maestro ≈2600',      blunder: 0,    eloOpt: 2600,  skill: 15 },
-    { elo: 3190, label: 'Ultra ≈3190',        blunder: 0,    eloOpt: 3190,  skill: 20 }
+    { elo: 400,  label: 'Iniciación ≈400',    blunder: 0.78, eloOpt: null,  skill: 0,  depth: 6,  limit: false },
+    { elo: 800,  label: 'Principiante ≈800',  blunder: 0.55, eloOpt: null,  skill: 2,  depth: 7,  limit: false },
+    { elo: 1200, label: 'Aprendiz ≈1200',     blunder: 0.30, eloOpt: null,  skill: 4,  depth: 8,  limit: false },
+    { elo: 1350, label: 'Casual ≈1350',       blunder: 0,    eloOpt: 1320,  skill: 0,  depth: 9,  limit: true },
+    { elo: 1600, label: 'Normal ≈1600',       blunder: 0,    eloOpt: 1600,  skill: 3,  depth: 10, limit: true },
+    { elo: 1800, label: 'Intermedio ≈1800',   blunder: 0,    eloOpt: 1800,  skill: 5,  depth: 12, limit: true },
+    { elo: 2050, label: 'Avanzado ≈2050',     blunder: 0,    eloOpt: 2050,  skill: 8,  depth: 14, limit: true },
+    { elo: 2300, label: 'Competitivo ≈2300',  blunder: 0,    eloOpt: 2300,  skill: 11, depth: 16, limit: true },
+    { elo: 2600, label: 'Maestro ≈2600',      blunder: 0,    eloOpt: 2600,  skill: 15, depth: 18, limit: true },
+    { elo: 3190, label: 'Ultra ≈3190',        blunder: 0,    eloOpt: 3190,  skill: 20, depth: 22, limit: true }
   ];
 
   // Debug solo con ?debug=1 en la URL
@@ -83,11 +86,14 @@ window.BCHESS_ENGINE = (function () {
     await init();
     if (!worker) return null;
 
-    worker.postMessage('setoption name UCI_LimitStrength value true');
-    if (level.eloOpt) worker.postMessage('setoption name UCI_Elo value ' + level.eloOpt);
+    worker.postMessage('setoption name Threads value 1');
+    worker.postMessage('setoption name Hash value 128');
+    worker.postMessage('setoption name MultiPV value 1');
+    worker.postMessage('setoption name UCI_LimitStrength value ' + (level.limit ? 'true' : 'false'));
+    if (level.limit && level.eloOpt) worker.postMessage('setoption name UCI_Elo value ' + level.eloOpt);
     worker.postMessage('setoption name Skill Level value ' + level.skill);
     worker.postMessage('position fen ' + fen);
-    worker.postMessage('go depth 8 movetime ' + (400 + difficulty * 200));
+    worker.postMessage('go depth ' + level.depth + ' movetime ' + (400 + difficulty * 200));
 
     return new Promise(function (resolve) {
       pending = resolve;

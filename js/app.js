@@ -100,7 +100,7 @@
     transport: 'p2p',
     settings: {
       name: 'Jugador', pieceSet: 'cburnett', boardTheme: 'lichess',
-      sound: true, volume: 80, engine: 'stockfish', difficulty: 5,
+      sound: true, volume: 80, engine: 'stockfish', difficulty: 5, soundPack: 'gm', aiSpeed: 'normal',
       colorAI: 'r', clockAI: '300+0', colorOnline: 'r', clockOnline: '300+0',
       settingsVersion: 2, homeProfileSummary: true, historyCollapsed: false,
       premove: true,
@@ -128,6 +128,7 @@
     viewPly: 0,
     pendingPromotion: null,
     aiThinking: false,
+    aiMoveTimer: null,
     applyingRemote: false,
     onlineConnected: false,
     connState: 'idle',
@@ -596,6 +597,8 @@
   function endGame(winner, reason, fromRemote) {
     if (S.gameOver) return;
     S.gameOver = true;
+    if (S.aiMoveTimer) { clearTimeout(S.aiMoveTimer); S.aiMoveTimer = null; }
+    S.aiThinking = false;
     stopClock();
     stopAutoPlay();
     updateRailActive();
@@ -821,6 +824,15 @@
   }
 
   // ================= IA =================
+  var AI_SPEED_MIN_MS = { instant: 0, fast: 600, normal: 1600, slow: 3600 };
+
+  function aiSpeedDelay() {
+    var speed = S.settings.aiSpeed || 'normal';
+    var min = AI_SPEED_MIN_MS[speed] != null ? AI_SPEED_MIN_MS[speed] : 1600;
+    if (!min) return 0;
+    return Math.round(min + Math.random() * min * 0.35);
+  }
+
   function scheduleEngineMove() {
     S.aiThinking = true;
     updateStatusLine();
@@ -828,23 +840,33 @@
     BCHESS_ENGINE.findBestMove(fen, {
       difficulty: S.settings.difficulty
     }).then(function (move) {
-      S.aiThinking = false;
-      if (S.gameOver) return;
-      if (!move) {
-        // Motor no respondió (timeout): hacer un movimiento legal aleatorio para no bloquear la partida
-        try {
-          var moves = S.game.moves({ verbose: true });
-          if (moves.length) {
-            var mv = moves[Math.floor(Math.random() * moves.length)];
-            var result = S.game.move({ from: mv.from, to: mv.to, promotion: mv.promotion });
-            if (result) afterMove(result, false);
-          }
-        } catch (e) {}
-        return;
+      var apply = function () {
+        S.aiMoveTimer = null;
+        S.aiThinking = false;
+        if (S.gameOver) return;
+        if (!move) {
+          // Motor no respondió (timeout): hacer un movimiento legal aleatorio para no bloquear la partida
+          try {
+            var moves = S.game.moves({ verbose: true });
+            if (moves.length) {
+              var mv = moves[Math.floor(Math.random() * moves.length)];
+              var result = S.game.move({ from: mv.from, to: mv.to, promotion: mv.promotion });
+              if (result) afterMove(result, false);
+            }
+          } catch (e) {}
+          return;
+        }
+        var from = move.substring(0, 2), to = move.substring(2, 4), promotion = move.length > 4 ? move.charAt(4) : undefined;
+        var result = S.game.move({ from: from, to: to, promotion: promotion });
+        if (result) afterMove(result, false);
+      };
+      var delay = aiSpeedDelay();
+      if (delay > 0) {
+        if (S.aiMoveTimer) clearTimeout(S.aiMoveTimer);
+        S.aiMoveTimer = setTimeout(apply, delay);
+      } else {
+        apply();
       }
-      var from = move.substring(0, 2), to = move.substring(2, 4), promotion = move.length > 4 ? move.charAt(4) : undefined;
-      var result = S.game.move({ from: from, to: to, promotion: promotion });
-      if (result) afterMove(result, false);
     }).catch(function () {
       S.aiThinking = false;
       if (S.gameOver) return;
@@ -1159,6 +1181,7 @@
 
   function startAIGame() {
     if (!ensureNoLiveGame()) return;
+    if (S.aiMoveTimer) { clearTimeout(S.aiMoveTimer); S.aiMoveTimer = null; }
     S.mode = 'ai';
     S.onlineConnected = false;
     var color = S.settings.colorAI;
@@ -1753,6 +1776,13 @@
     return window.BCHESS_ENGINE ? window.BCHESS_ENGINE.ladder()[i - 1].label : 'Normal';
   }
 
+  function speedLabelFor(v) {
+    if (v === 'instant') return 'Instantánea';
+    if (v === 'fast') return 'Rápida';
+    if (v === 'slow') return 'Pensativa';
+    return 'Normal';
+  }
+
   function savePublicHandle(raw) {
     try {
       var p = BCHESS_PROFILE.getProfile();
@@ -1826,6 +1856,12 @@
 
     syncSeg('#seg-color', S.settings.colorAI);
     syncSeg('#seg-color-online', S.settings.colorOnline);
+    syncSeg('#seg-soundpack', S.settings.soundPack || 'gm');
+
+    var speedSel = $('#ai-speed');
+    if (speedSel) speedSel.value = S.settings.aiSpeed || 'normal';
+    var speedLabel = $('#ai-speed-value');
+    if (speedLabel) speedLabel.textContent = speedLabelFor(S.settings.aiSpeed || 'normal');
 
     syncClockSelect('ai', S.settings.clockAI);
     syncClockSelect('online', S.settings.clockOnline);
@@ -1938,11 +1974,35 @@
 
   function renderPreviewBoard() {
     var preview = $('#preview-board');
+    if (!preview) return;
     preview.innerHTML = '';
-    var theme = BCHESS_PIECES.themes.find(function (t) { return t.id === S.settings.boardTheme; }) || BCHESS_PIECES.themes[0];
-    var fen = 'r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQ1RK1';
-    var rows = fen.split('/');
+    var fen = 'r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQ1RK1 w KQkq - 1 9';
+    var rows = fen.split(' ')[0].split('/');
     var map = { r: 'r', n: 'n', b: 'b', q: 'q', k: 'k', p: 'p', R: 'r', N: 'n', B: 'b', Q: 'q', K: 'k', P: 'p' };
+    var FILES = 'abcdefgh';
+
+    // Ejemplos: caballo f3 seleccionado con sus movimientos legales,
+    // último movimiento e2→e4 y jaque de muestra sobre el rey negro (e8).
+    var selectedSq = S.settings.showLegalMoves !== false ? 'f3' : null;
+    var lastFrom = S.settings.showLastMove !== false ? 'e2' : null;
+    var lastTo = S.settings.showLastMove !== false ? 'e4' : null;
+    var checkSq = S.settings.showCheck !== false ? 'e8' : null;
+    var legalTargets = {};
+    if (S.settings.showLegalMoves !== false) {
+      var got = false;
+      try {
+        if (typeof Chess !== 'undefined') {
+          var sim = new Chess();
+          if (sim.load(fen)) {
+            var ms = sim.moves({ square: 'f3', verbose: true });
+            ms.forEach(function (m) { legalTargets[m.to] = m; });
+            got = true;
+          }
+        }
+      } catch (e) { got = false; }
+      if (!got) ['e5', 'g5', 'h4', 'd4', 'e1'].forEach(function (sq) { legalTargets[sq] = { to: sq }; });
+    }
+
     for (var row = 0; row < 8; row++) {
       var col = 0;
       for (var i = 0; i < rows[row].length; i++) {
@@ -1961,6 +2021,19 @@
       var sq = document.createElement('div');
       var light = (row + col) % 2 === 0;
       sq.className = 'sq ' + (light ? 'light' : 'dark');
+      var alg = FILES.charAt(col) + (8 - row);
+      if (alg === selectedSq) sq.classList.add('selected');
+      if (alg === lastFrom || alg === lastTo) sq.classList.add('last-move');
+      if (legalTargets[alg]) { sq.classList.add('legal'); if (legalTargets[alg].captured) sq.classList.add('capture'); }
+      if (alg === checkSq) sq.classList.add('check');
+      if (S.settings.showCoordinates !== false) {
+        if (col === 0) {
+          var rs = document.createElement('span'); rs.className = 'coord rank'; rs.textContent = String(8 - row); sq.appendChild(rs);
+        }
+        if (row === 7) {
+          var fs = document.createElement('span'); fs.className = 'coord file'; fs.textContent = FILES.charAt(col); sq.appendChild(fs);
+        }
+      }
       if (piece) {
         var img = document.createElement('img');
         img.src = BCHESS_PIECES.pieceUrl(S.settings.pieceSet, piece.color, piece.type);
@@ -2129,6 +2202,7 @@
       }
     } catch (e) {}
     applyTheme();
+    BCHESS_SOUNDS.setPack(S.settings.soundPack || 'gm');
     BCHESS_SOUNDS.setEnabled(S.settings.sound);
     BCHESS_SOUNDS.setVolume(S.settings.volume);
     renderSettingsUI();
@@ -2541,6 +2615,12 @@
       $('#difficulty-value').textContent = difficultyLabel(S.settings.difficulty);
       saveSettings();
     });
+    var aiSpeedSel = $('#ai-speed');
+    if (aiSpeedSel) aiSpeedSel.addEventListener('change', function () {
+      S.settings.aiSpeed = this.value;
+      $('#ai-speed-value').textContent = speedLabelFor(this.value);
+      saveSettings();
+    });
     $('#btn-start-ai').addEventListener('click', startAIGame);
 
     // Online: ver pantalla de elección (handlers arriba)
@@ -2625,6 +2705,12 @@
       S.settings.sound = !S.settings.sound;
       BCHESS_SOUNDS.setEnabled(S.settings.sound);
       saveSettings(); renderSettingsUI();
+    });
+    bindSeg('#seg-soundpack', function (v) {
+      S.settings.soundPack = v;
+      BCHESS_SOUNDS.setPack(v);
+      BCHESS_SOUNDS.play('start');
+      saveSettings();
     });
     var premoveToggle = $('#toggle-premove');
     if (premoveToggle) premoveToggle.addEventListener('click', function () {
