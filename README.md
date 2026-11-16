@@ -17,8 +17,8 @@
 ## Qué es
 
 - **VS IA** — motor **Stockfish** adaptado con fuerza ajustable (~400–3190 Elo, 10 niveles).
-- **En línea P2P** — salas de 6 caracteres, conexión directa dispositivo↔dispositivo vía WebRTC, compatible con el APK móvil (mismo protocolo `v:2`).
-- **LAN / Red local** — juega PC↔PC y PC↔APK por **TCP directo** (puerto 5891), sin Internet. El anfitrión ve su IP local con un toque; el invitado solo introduce `IP:puerto`.
+- **En línea P2P** — salas de 6 caracteres, conexión directa dispositivo↔dispositivo vía WebRTC, compatible con el APK móvil (mismo protocolo `v:2`). **Funciona también en la versión web**.
+- **LAN / Red local** — juega PC↔PC y PC↔APK por **TCP directo** (puerto 5891), sin Internet. El anfitrión ve su IP local con un toque; el invitado solo introduce `IP:puerto`. **Solo en la app de escritorio (.exe), no en la versión web.**
 - **Torneos** — partidas individuales o por rondas con colores alternados y marcador.
 - **Historial local** — PGN + miniaturas + estadísticas gráficas (resumen, flujo, aperturas, progreso, resultados por color) con gráficos grandes en tarjetas iguales.
 - **Premove** — encadena jugadas por adelantado como en Lichess.
@@ -46,6 +46,8 @@
 2. Pulsa el icono **Instalar B-Chess Desktop** en la barra.
 3. Se instala como una app propia y se actualiza sola al abrirla (service worker).
 
+> **Qué funciona en la versión web (Opción B):** **solo P2P (Internet)**. Los navegadores no pueden abrir sockets TCP crudos, así que **LAN está deshabilitada** en la versión web (el botón aparece atenuado como «Solo en .exe»). Bluetooth no existe. **Si quieres jugar en red local, usa la [Opción A — instalador .exe](https://github.com/ElalChico/B-Chess-Desktop/releases/latest).**
+
 ## Desarrollo
 
 ```bash
@@ -58,13 +60,13 @@ npm run release              # build + publica release en GitHub (requiere GH_TO
 
 ## Conexión: modos disponibles
 
-| Modo | Estado | Descripción |
-|------|--------|-------------|
-| **P2P (Internet)** | ✅ Funciona | Código de 6 caracteres, WebRTC + Firebase signaling. Compatible PC↔PC y PC↔APK. |
-| **LAN (IP Local)** | ✅ Funciona (en el .exe) | TCP directo puerto 5891. Compatible PC↔PC y PC↔APK. Requiere red local. |
-| **Bluetooth** | ❌ Descartado | Web Bluetooth API solo soporta BLE (no SPP clásico), inviable para juego. |
+| Modo | Web (GitHub Pages) | .exe (Electron) | Descripción |
+|------|--------------------|-----------------|-------------|
+| **P2P (Internet)** | ✅ Funciona | ✅ Funciona | Código de 6 caracteres, WebRTC + Firebase signaling. Compatible PC↔PC y PC↔APK. |
+| **LAN (IP Local)** | ❌ Deshabilitada (no disponible) | ✅ Funciona | TCP directo puerto 5891. Compatible PC↔PC y PC↔APK. Requiere red local. |
+| **Bluetooth** | ❌ No existe | ❌ No existe | Web Bluetooth API solo soporta BLE (no SPP clásico). |
 
-> En la PWA del navegador, LAN no está disponible (los navegadores no exponen sockets TCP). La Opción A (.exe) incluye LAN.
+> El .exe conserva LAN; la versión web (GitHub Pages/PWA) solo ofrece P2P. LAN en la web está **deshabilitada a propósito** (los navegadores no exponen sockets TCP).
 
 ## Motores IA disponibles
 

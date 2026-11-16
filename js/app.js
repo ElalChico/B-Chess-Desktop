@@ -43,8 +43,35 @@
     updateAntennas();
   }
 
+  // En la PWA (navegador) no hay sockets TCP crudos → LAN solo en el .exe (Electron)
+  function isDesktopApp() {
+    return !!(window.BCHESS_DESKTOP && window.BCHESS_DESKTOP.platform) ||
+           !!(window.BCHESS_LAN && window.BCHESS_LAN.isElectron === true);
+  }
+
+  function lanAvailable() { return isDesktopApp(); }
+
+  // En la web: tile LAN deshabilitado con aviso; antena LAN oculta
+  function disableLanForWeb() {
+    if (isDesktopApp()) return;
+    var tile = document.getElementById('conn-mode-lan');
+    if (tile) {
+      tile.disabled = true;
+      tile.classList.add('conn-mode-soon');
+      tile.classList.remove('conn-mode-active');
+      tile.title = 'LAN solo disponible en la app de escritorio (.exe)';
+      var sub = tile.querySelector('.conn-mode-sub');
+      if (sub) sub.textContent = 'Solo en .exe';
+    }
+    var antenna = document.getElementById('antenna-lan');
+    if (antenna) antenna.classList.add('hidden');
+    var lanPanel = document.getElementById('online-lan');
+    if (lanPanel) lanPanel.classList.add('hidden');
+  }
+
   // Activa un transporte swappando la implementación global BCHESS_NET
   function applyTransport(mode) {
+    if (mode === 'lan' && !lanAvailable()) mode = 'p2p';
     currentTransport = mode;
     S.transport = mode;
     window.BCHESS_NET = (mode === 'lan' && _lanNet) ? _lanNet : _p2pNet;
@@ -2190,11 +2217,17 @@
       if (jc) { jc.value = ''; jc.focus(); }
     });
 
-    // ---------- Transporte (P2P / LAN / Bluetooth) ----------
+    // ---------- Transporte (P2P / LAN, si está disponible) ----------
     var connP2pBtn = $('#conn-mode-p2p');
     var connLanBtn = $('#conn-mode-lan');
     if (connP2pBtn) connP2pBtn.addEventListener('click', function () { applyTransport('p2p'); });
-    if (connLanBtn) connLanBtn.addEventListener('click', function () { applyTransport('lan'); });
+    if (connLanBtn) connLanBtn.addEventListener('click', function () {
+      if (!lanAvailable()) {
+        showToast('LAN solo disponible en la app de escritorio (.exe)');
+        return;
+      }
+      applyTransport('lan');
+    });
 
     // LAN: cargar IPs locales en el panel del anfitrión
     function loadLanLocalIps() {
@@ -2486,6 +2519,9 @@
         if (topHandle) topHandle.textContent = p.handle || p.name || 'Elal_Chico';
       }
     });
+
+    // En navegador: deshabilitar el modo LAN (requiere Electron)
+    disableLanForWeb();
 
     // Estado de conexión inicial
     applyTransport('p2p');
