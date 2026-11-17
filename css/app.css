@@ -416,13 +416,19 @@ body {
 .preview-board .coord.file { right: 2px; bottom: 1px; }
 .preview-label { margin-top: 10px; color: var(--muted); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; }
 
-.piece-grid, .theme-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.piece-grid, .theme-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .theme-grid { grid-template-columns: repeat(3, 1fr); }
+
+/* --- Ajustes compactos: rejilla de piezas densa (botones pequeños) --- */
+.settings-controls #piece-set-grid { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 6px; }
+.settings-controls #piece-set-grid .piece-btn { padding: 5px 2px; gap: 4px; border-radius: 6px; }
+.settings-controls #piece-set-grid .piece-btn img { width: 36px; height: 36px; }
+.settings-controls #piece-set-grid .piece-btn span { font-size: 9px; line-height: 1.15; }
 
 /* --- Ajustes compactos: rejilla de 2 columnas para no estirar la pantalla hacia abajo --- */
 .settings-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 20px; align-content: start; }
 .settings-controls .form-block { margin-bottom: 0; }
-.settings-controls #piece-set-grid { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
+
 .settings-controls .form-block[data-dev="settings-pieces"] { grid-column: 1 / -1; order: 1; }
 .settings-controls .form-block[data-dev="settings-themes"] { order: 2; }
 .settings-controls .form-block[data-dev="settings-volume"] { order: 3; }
