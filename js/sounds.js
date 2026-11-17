@@ -4,12 +4,16 @@
  *  - GM      → set gm_* (por defecto)
  *  - Clásico → set lichess/clásico (capture, check, checkmate…)
  * Nunca suena al seleccionar una pieza ni al soltarla.
+ *
+ * Reproduzco con un <Audio> nuevo por sonido: evita que un fallo puntual
+ * (elemento saturado, currentTime antes de cargar, etc.) silencie todo el motor.
  */
 window.BCHESS_SOUNDS = (function () {
   const base = 'assets/sounds/';
 
   var packs = {
     gm: {
+      move: 'gm_move.mp3',
       capture: 'gm_capture.mp3',
       check: 'gm_check.mp3',
       mate: 'gm_mate.mp3',
@@ -28,6 +32,7 @@ window.BCHESS_SOUNDS = (function () {
       countdown1: 'countdown1.mp3'
     },
     clasico: {
+      move: 'move.mp3',
       capture: 'capture.mp3',
       check: 'check.mp3',
       mate: 'checkmate.mp3',
@@ -50,31 +55,24 @@ window.BCHESS_SOUNDS = (function () {
   let files = packs.gm;
   let enabled = true;
   let volume = 0.8;
-  const audio = {};
-
-  function load(name) {
-    if (!audio[name] && files[name]) {
-      audio[name] = new Audio(base + files[name]);
-      audio[name].preload = 'auto';
-    }
-    return audio[name];
-  }
 
   function play(name) {
     if (!enabled) return;
-    const a = load(name);
-    if (!a) return;
+    var src = files[name];
+    if (!src) return;
     try {
-      a.pause();
-      a.currentTime = 0;
-      a.volume = volume;
-      a.play().catch(function () {});
+      var a = new Audio(base + src);
+      var v = volume;
+      if (!isFinite(v) || v < 0 || v > 1) v = 0.8;
+      a.volume = v;
+      a.preload = 'auto';
+      var p = a.play();
+      if (p && p.catch) p.catch(function () { /* sin gesto o bloqueado: silencio */ });
     } catch (e) { /* silencio */ }
   }
 
   function setPack(pack) {
     files = packs[pack] || packs.gm;
-    for (var k in audio) delete audio[k];
   }
 
   function getPack() {
@@ -84,11 +82,20 @@ window.BCHESS_SOUNDS = (function () {
 
   function setEnabled(v) { enabled = !!v; }
   function isEnabled() { return enabled; }
-  function setVolume(v) { volume = Math.max(0, Math.min(1, v / 100)); }
+  function setVolume(v) {
+    var n = Number(v);
+    if (!isFinite(n)) n = 80;
+    volume = Math.max(0, Math.min(1, n / 100));
+  }
   function getVolume() { return Math.round(volume * 100); }
 
-  // Precarga
-  Object.keys(files).forEach(load);
+  // Precarga básica (deja la música lista para el primer click)
+  try {
+    Object.keys(files).forEach(function (k) {
+      var a = new Audio(base + files[k]);
+      a.preload = 'auto';
+    });
+  } catch (e) {}
 
   return { play, setPack, getPack, setEnabled, isEnabled, setVolume, getVolume };
 })();

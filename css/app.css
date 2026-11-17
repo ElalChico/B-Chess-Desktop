@@ -386,8 +386,8 @@ body {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ===== Settings ===== */
-.settings-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 22px; align-items: start; }
-.settings-preview { text-align: center; }
+.settings-layout { display: grid; grid-template-columns: minmax(280px, 420px) minmax(0, 1fr); gap: 22px; align-items: start; margin-bottom: 18px; }
+.settings-preview { text-align: center; position: sticky; top: 0; }
 .preview-board {
   width: min(100%, 470px, calc(100dvh - 200px)); max-width: 470px; aspect-ratio: 1; margin: 0 auto;
   border-radius: 6px; overflow: hidden; display: grid;
@@ -418,6 +418,41 @@ body {
 
 .piece-grid, .theme-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .theme-grid { grid-template-columns: repeat(3, 1fr); }
+
+/* --- Ajustes compactos: rejilla de 2 columnas para no estirar la pantalla hacia abajo --- */
+.settings-controls { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 20px; align-content: start; }
+.settings-controls .form-block { margin-bottom: 0; }
+.settings-controls #piece-set-grid { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); }
+.settings-controls .form-block[data-dev="settings-pieces"] { grid-column: 1 / -1; order: 1; }
+.settings-controls .form-block[data-dev="settings-themes"] { order: 2; }
+.settings-controls .form-block[data-dev="settings-volume"] { order: 3; }
+.settings-controls .form-block[data-dev="settings-soundpack"] { order: 4; }
+.settings-controls .form-block[data-dev="settings-engine"] { order: 5; }
+.settings-controls .form-block[data-dev="settings-sound"] { order: 6; }
+.settings-controls .form-block[data-dev="settings-premove"] { order: 7; }
+.settings-controls .form-block[data-dev="settings-coordinates"] { order: 8; }
+.settings-controls .form-block[data-dev="settings-legal-moves"] { order: 9; }
+.settings-controls .form-block[data-dev="settings-check"] { order: 10; }
+.settings-controls .form-block[data-dev="settings-last-move"] { order: 11; }
+.settings-controls .form-block[data-dev="settings-privacy"] { order: 12; grid-column: 1 / -1; }
+.settings-controls .form-block[data-dev="settings-rail"] { order: 13; grid-column: 1 / -1; }
+/* Interruptores como tarjetas compactas */
+.settings-controls .form-block.row {
+  min-height: 48px; padding: 10px 12px; border: 1px solid var(--line-2);
+  border-radius: 10px; background: var(--panel-2);
+}
+.settings-controls .form-block.row .form-label { margin-bottom: 0; }
+.settings-controls .form-block[data-dev="settings-rail"] {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 12px; border: 1px solid var(--line-2); border-radius: 10px; background: var(--panel-2);
+}
+.settings-controls .form-block[data-dev="settings-rail"] .form-label { margin-bottom: 0; }
+/* Privacidad en dos columnas para acortar el bloque */
+@media (min-width: 721px) {
+  .settings-controls .privacy-rows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; }
+  .settings-controls .privacy-row:first-child,
+  .settings-controls .privacy-row:nth-child(2) { border-top: 0; }
+}
 .piece-btn, .theme-btn {
   border: 1px solid var(--line-2); background: var(--panel-2); border-radius: 8px; padding: 8px 4px;
   cursor: pointer; color: var(--text); display: flex; flex-direction: column; align-items: center; gap: 6px;
@@ -978,7 +1013,7 @@ body.dev-mode [data-dev]:hover { outline: 2px dashed var(--accent); outline-offs
   .conn-modes { grid-template-columns: 1fr; }
   .home-title { font-size: 28px; letter-spacing: 4px; }
   .home-logo { width: 96px; height: 96px; }
-  .piece-grid { grid-template-columns: repeat(4, 1fr); }
+  .settings-controls #piece-set-grid { grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); }
   .player-bar { gap: 6px; }
   .avatar { display: none; }
   .clock { min-width: 76px; font-size: 17px; padding: 5px 8px; }
@@ -1430,4 +1465,6 @@ body.fullscreen .game-panel { max-height: calc(100vh - 16px); }
 @media (max-width: 720px) {
   .profile-filters-wrap { flex-direction: column; align-items: stretch; }
   .profile-filters-wrap .profile-view-toggle { align-self: flex-start; }
+  .settings-controls { grid-template-columns: 1fr; }
+  .settings-preview { position: static; }
 }

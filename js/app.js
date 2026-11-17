@@ -100,7 +100,7 @@
     transport: 'p2p',
     settings: {
       name: 'Jugador', pieceSet: 'cburnett', boardTheme: 'lichess',
-      sound: true, volume: 80, engine: 'stockfish', difficulty: 5, soundPack: 'gm', aiSpeed: 'normal',
+      sound: true, volume: 80, engine: 'stockfish', difficulty: 5, soundPack: 'gm', aiSpeed: 'normal', aiWinStreak: 0,
       colorAI: 'r', clockAI: '300+0', colorOnline: 'r', clockOnline: '300+0',
       settingsVersion: 2, homeProfileSummary: true, historyCollapsed: false,
       premove: true,
@@ -493,10 +493,13 @@
 
     // Sonidos (sin sonido de colocación)
     var san = result.san || '';
+    var isMate = san.indexOf('#') !== -1;
+    var isCheck = !isMate && san.indexOf('+') !== -1;
     if (result.captured) BCHESS_SOUNDS.play('capture');
     else if (san.indexOf('O-O') === 0) BCHESS_SOUNDS.play('enroque');
-    if (san.indexOf('#') !== -1) BCHESS_SOUNDS.play('mate');
-    else if (san.indexOf('+') !== -1) BCHESS_SOUNDS.play('check');
+    else if (!isMate && !isCheck) BCHESS_SOUNDS.play('move');
+    if (isMate) BCHESS_SOUNDS.play('mate');
+    else if (isCheck) BCHESS_SOUNDS.play('check');
 
     // Reloj: suma incremento al bando que movió
     if (S.timeMs > 0) {
@@ -607,7 +610,7 @@
     try { S.game.header('Result', resultTag); } catch (e) {}
 
     var title, msg;
-    if (winner === null) { title = 'Tablas'; msg = reason; }
+    if (winner === null) { title = 'Tablas'; msg = reason; BCHESS_SOUNDS.play('draw'); }
     else {
       var localWon = winner === S.localColor;
       var oppName = S.mode === 'ai'
@@ -638,6 +641,7 @@
       }
     }
     saveGameRecord(resultTag, reason, winner);
+    applyAIProgress(winner);
     showEndModal(title, msg, winner, reason);
   }
 
@@ -1776,6 +1780,38 @@
     return window.BCHESS_ENGINE ? window.BCHESS_ENGINE.ladder()[i - 1].label : 'Normal';
   }
 
+  // Sincroniza el slider/etiqueta de dificultad y la racha de progreso
+  function renderSetupDifficulty() {
+    var d = Math.max(1, Math.min(10, parseInt(S.settings.difficulty, 10) || 5));
+    var slider = $('#difficulty');
+    if (slider) slider.value = d;
+    var label = $('#difficulty-value');
+    if (label) label.textContent = difficultyLabel(d);
+    var streakEl = $('#difficulty-streak');
+    if (streakEl) {
+      var streak = Math.max(0, Math.min(6, S.settings.aiWinStreak | 0));
+      if (d >= 10) streakEl.textContent = 'Dificultad máxima (≈3190). Racha actual: ' + streak + '/6.';
+      else streakEl.textContent = 'Racha vs IA: ' + streak + '/6 — gana 6 seguidas y sube sola la dificultad.';
+    }
+  }
+
+  // Progreso automático: 6 victorias seguidas vs IA suben la dificultad un nivel
+  function applyAIProgress(winner) {
+    if (S.mode !== 'ai') return;
+    var localWon = !!(winner && winner === S.localColor);
+    if (localWon) S.settings.aiWinStreak = (S.settings.aiWinStreak | 0) + 1;
+    else S.settings.aiWinStreak = 0;
+    var bumped = false;
+    if ((S.settings.aiWinStreak | 0) >= 6 && (S.settings.difficulty | 0) < 10) {
+      S.settings.difficulty = Math.min(10, (S.settings.difficulty | 0) + 1);
+      S.settings.aiWinStreak = 0;
+      bumped = true;
+    }
+    saveSettings();
+    renderSetupDifficulty();
+    if (bumped) showToast('¡6 victorias seguidas! Dificultad subida a ' + difficultyLabel(S.settings.difficulty));
+  }
+
   function speedLabelFor(v) {
     if (v === 'instant') return 'Instantánea';
     if (v === 'fast') return 'Rápida';
@@ -1798,8 +1834,7 @@
     $('#toggle-sound').classList.toggle('on', S.settings.sound);
     $('#toggle-sound').setAttribute('aria-checked', S.settings.sound ? 'true' : 'false');
     $('#volume').value = S.settings.volume;
-    $('#difficulty').value = S.settings.difficulty;
-    $('#difficulty-value').textContent = difficultyLabel(S.settings.difficulty);
+    renderSetupDifficulty();
 
     var premoveToggle = $('#toggle-premove');
     if (premoveToggle) {
@@ -2209,7 +2244,7 @@
 
     // Navegación
     S.currentScreen = 'home';
-    $('#btn-play-ai').addEventListener('click', function () { setScreen('setup'); });
+    $('#btn-play-ai').addEventListener('click', function () { renderSetupDifficulty(); setScreen('setup'); });
     $('#btn-play-online').addEventListener('click', function () { setScreen('online'); });
     $('#btn-settings-footer').addEventListener('click', function () { renderSettingsUI(); setScreen('settings'); });
     var topProfile = $('#btn-top-profile');
@@ -2612,7 +2647,9 @@
     bindClockControl('ai', 'clockAI');
     $('#difficulty').addEventListener('input', function () {
       S.settings.difficulty = parseInt(this.value, 10);
-      $('#difficulty-value').textContent = difficultyLabel(S.settings.difficulty);
+      // Cambiar la dificultad manualmente rompe la racha (las 6 son seguidas)
+      S.settings.aiWinStreak = 0;
+      renderSetupDifficulty();
       saveSettings();
     });
     var aiSpeedSel = $('#ai-speed');

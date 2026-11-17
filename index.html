@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=20261116">
+  <link rel="stylesheet" href="css/app.css?v=20261117">
 
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
@@ -31,7 +31,7 @@
 
     <div class="app-body">
 
-      <nav id="side-rail" class="side-rail" data-dev="side-rail" aria-label="NavegaciÃ³n principal"></nav>
+      <nav id="side-rail" class="side-rail" data-dev="side-rail" aria-label="Navegación principal"></nav>
 
       <main id="screens">
 
@@ -51,19 +51,19 @@
               </button>
               <button id="btn-play-online" class="home-act home-act-online" data-dev="btn-play-online">
                 <svg viewBox="0 0 24 24" width="34" height="34"><path d="M2.5 9.5a14.5 14.5 0 0 1 19 0M5.5 13a10 10 0 0 1 13 0M8.5 16.5a5 5 0 0 1 7 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="20" r="1.3" fill="currentColor"/></svg>
-                <span class="home-act-label">Jugar en lÃ­nea</span>
+                <span class="home-act-label">Jugar en línea</span>
               </button>
             </div>
 
             <div class="home-chip-row">
-              <span class="home-chip">â™Ÿ Stockfish</span>
-              <span class="home-chip">â™Ÿ P2P con cÃ³digo</span>
-              <span class="home-chip">â™Ÿ Historial local</span>
+              <span class="home-chip">♟ Stockfish</span>
+              <span class="home-chip">♟ P2P con código</span>
+              <span class="home-chip">♟ Historial local</span>
             </div>
 
             <div class="home-footer">
               <span id="home-conn-state" class="home-conn-state" data-dev="home-conn-state"><span class="conn-dot"></span>P2P desconectado</span>
-              <span id="version-badge" class="version-badge">B-Chess Desktop v2.2.7</span>
+              <span id="version-badge" class="version-badge">B-Chess Desktop v2.2.8</span>
               <button id="btn-settings-footer" class="icon-btn" title="Ajustes" aria-label="Ajustes" data-dev="btn-settings-footer">
                 <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.9 1.9M16.6 16.6l1.9 1.9M18.5 5.5l-1.9 1.9M7.4 16.6l-1.9 1.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
               </button>
@@ -71,7 +71,7 @@
           </div>
 
           <div id="home-quick-actions" class="home-quick-actions hidden" data-dev="home-quick-actions">
-            <button id="btn-show-welcome" class="btn btn-ghost btn-small" title="Mostrar presentaciÃ³n">Mostrar presentaciÃ³n</button>
+            <button id="btn-show-welcome" class="btn btn-ghost btn-small" title="Mostrar presentación">Mostrar presentación</button>
           </div>
         </section>
 
@@ -91,23 +91,24 @@
           <div class="form-block" data-dev="setup-difficulty">
             <label class="form-label" for="difficulty">Dificultad <b id="difficulty-value">Normal</b></label>
             <input id="difficulty" class="range" type="range" min="1" max="10" value="5">
+            <div class="muted" id="difficulty-streak" data-dev="difficulty-streak" style="font-size:11px;margin-top:6px;">Racha vs IA: 0/6 — gana 6 seguidas y sube sola.</div>
           </div>
 
           <div class="form-block" data-dev="setup-clock">
             <label class="form-label" for="clock-ai">Reloj</label>
             <select id="clock-ai" class="select" data-dev="clock-ai">
-              <option value="0">Sin lÃ­mite</option>
-              <option value="60+0">Bullet Â· 1+0</option>
-              <option value="120+1">Bullet Â· 2+1</option>
-              <option value="180+0">Blitz Â· 3+0</option>
-              <option value="180+2">Blitz Â· 3+2</option>
-              <option value="300+0" selected>Blitz Â· 5+0</option>
-              <option value="300+3">Blitz Â· 5+3</option>
-              <option value="600+0">RÃ¡pida Â· 10+0</option>
-              <option value="600+5">RÃ¡pida Â· 10+5</option>
-              <option value="900+10">RÃ¡pida Â· 15+10</option>
-              <option value="1800+0">ClÃ¡sica Â· 30+0</option>
-              <option value="custom">Personalizadoâ€¦</option>
+              <option value="0">Sin límite</option>
+              <option value="60+0">Bullet · 1+0</option>
+              <option value="120+1">Bullet · 2+1</option>
+              <option value="180+0">Blitz · 3+0</option>
+              <option value="180+2">Blitz · 3+2</option>
+              <option value="300+0" selected>Blitz · 5+0</option>
+              <option value="300+3">Blitz · 5+3</option>
+              <option value="600+0">Rápida · 10+0</option>
+              <option value="600+5">Rápida · 10+5</option>
+              <option value="900+10">Rápida · 15+10</option>
+              <option value="1800+0">Clásica · 30+0</option>
+              <option value="custom">Personalizado…</option>
             </select>
             <div class="custom-clock hidden" id="custom-clock-ai" data-dev="custom-clock-ai">
               <div class="custom-clock-field">
@@ -124,10 +125,10 @@
           <div class="form-block" data-dev="setup-speed">
             <label class="form-label" for="ai-speed">Velocidad de respuesta de la IA <b id="ai-speed-value">Normal</b></label>
             <select id="ai-speed" class="select" data-dev="ai-speed">
-              <option value="instant">InstantÃ¡nea Â· juega al momento</option>
-              <option value="fast">RÃ¡pida Â· ~1 segundo</option>
-              <option value="normal">Normal Â· ~2 segundos</option>
-              <option value="slow">Pensativa Â· ~4 segundos</option>
+              <option value="instant">Instantánea · juega al momento</option>
+              <option value="fast">Rápida · ~1 segundo</option>
+              <option value="normal">Normal · ~2 segundos</option>
+              <option value="slow">Pensativa · ~4 segundos</option>
             </select>
           </div>
 
@@ -135,14 +136,14 @@
           <button id="btn-setup-back" class="btn btn-ghost" data-dev="btn-setup-back">Volver</button>
         </section>
 
-        <!-- ============ ONLINE (elegir conexiÃ³n / crear / unirse) ============ -->
+        <!-- ============ ONLINE (elegir conexión / crear / unirse) ============ -->
         <section id="screen-online" class="screen" data-dev="screen-online">
-          <h2 class="screen-title" data-dev="online-title">Jugar en lÃ­nea</h2>
-          <p class="muted" data-dev="online-sub">Elige cÃ³mo conectas; cada vez solo uno puede estar activo.</p>
+          <h2 class="screen-title" data-dev="online-title">Jugar en línea</h2>
+          <p class="muted" data-dev="online-sub">Elige cómo conectas; cada vez solo uno puede estar activo.</p>
 
-          <!-- Barra de estado: muestra quÃ© conexiÃ³n estÃ¡ en vivo (los botones de abajo solo eligen el modo) -->
+          <!-- Barra de estado: muestra qué conexión está en vivo (los botones de abajo solo eligen el modo) -->
           <div class="conn-status-bar" id="conn-status-bar" data-dev="conn-status-bar" role="status" aria-live="polite">
-            <div class="conn-antenna" id="antenna-p2p" data-state="idle" data-dev="antenna-p2p" title="Estado de la conexiÃ³n P2P (internet)">
+            <div class="conn-antenna" id="antenna-p2p" data-state="idle" data-dev="antenna-p2p" title="Estado de la conexión P2P (internet)">
               <span class="ant-bars" aria-hidden="true"><span class="bar b1"></span><span class="bar b2"></span><span class="bar b3"></span><span class="bar b4"></span></span>
               <span class="ant-info">
                 <span class="ant-name">P2P</span>
@@ -150,7 +151,7 @@
               </span>
               <span class="ant-dot" aria-hidden="true"></span>
             </div>
-            <div class="conn-antenna" id="antenna-lan" data-state="idle" data-dev="antenna-lan" title="Estado de la conexiÃ³n LAN (red local, TCP 5891)">
+            <div class="conn-antenna" id="antenna-lan" data-state="idle" data-dev="antenna-lan" title="Estado de la conexión LAN (red local, TCP 5891)">
               <span class="ant-bars" aria-hidden="true"><span class="bar b1"></span><span class="bar b2"></span><span class="bar b3"></span><span class="bar b4"></span></span>
               <span class="ant-info">
                 <span class="ant-name">LAN</span>
@@ -161,12 +162,12 @@
           </div>
 
           <div class="conn-modes" data-dev="conn-modes">
-            <button class="conn-mode conn-mode-active" id="conn-mode-p2p" data-dev="conn-mode-p2p" title="Usar conexiÃ³n P2P (internet, con cÃ³digo de sala)" aria-label="ConexiÃ³n P2P">
+            <button class="conn-mode conn-mode-active" id="conn-mode-p2p" data-dev="conn-mode-p2p" title="Usar conexión P2P (internet, con código de sala)" aria-label="Conexión P2P">
               <svg viewBox="0 0 24 24" width="22" height="22"><path d="M2.5 9.5a14.5 14.5 0 0 1 19 0M5.5 13a10 10 0 0 1 13 0M8.5 16.5a5 5 0 0 1 7 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="20" r="1.3" fill="currentColor"/></svg>
               <span class="conn-mode-name">P2P</span>
               <span class="conn-mode-sub" id="conn-p2p-state">Desconectado</span>
             </button>
-            <button class="conn-mode" id="conn-mode-lan" data-dev="conn-mode-lan" title="Usar conexiÃ³n por red local (IP:puerto)" aria-label="ConexiÃ³n LAN">
+            <button class="conn-mode" id="conn-mode-lan" data-dev="conn-mode-lan" title="Usar conexión por red local (IP:puerto)" aria-label="Conexión LAN">
               <svg viewBox="0 0 24 24" width="22" height="22"><rect x="2" y="2" width="20" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 22h8M12 18v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
               <span class="conn-mode-name">LAN</span>
               <span class="conn-mode-sub" id="conn-lan-state">Desconectado</span>
@@ -183,15 +184,15 @@
               </button>
               <button id="btn-join-room" class="online-tile" data-dev="btn-join-room">
                 <svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
-                <span class="online-tile-title">Unirme con cÃ³digo</span>
-                <span class="online-tile-sub">CÃ³digo del anfitriÃ³n</span>
+                <span class="online-tile-title">Unirme con código</span>
+                <span class="online-tile-sub">Código del anfitrión</span>
               </button>
             </div>
           </div>
 
           <!-- LAN (red local, TCP) -->
           <div id="online-lan" class="online-transport hidden" data-dev="online-lan">
-            <p class="muted">ConexiÃ³n directa por TCP en tu red local â€” compatible con PCâ†”PC y PCâ†”APK.</p>
+            <p class="muted">Conexión directa por TCP en tu red local — compatible con PC↔PC y PC↔APK.</p>
             <div class="online-actions">
               <button id="btn-lan-host" class="online-tile" data-dev="btn-lan-host">
                 <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8 22h8M12 18v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
@@ -201,7 +202,7 @@
               <button id="btn-lan-join" class="online-tile" data-dev="btn-lan-join">
                 <svg viewBox="0 0 24 24" width="28" height="28"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
                 <span class="online-tile-title">Unirme (LAN)</span>
-                <span class="online-tile-sub">Introduce IP del anfitriÃ³n</span>
+                <span class="online-tile-sub">Introduce IP del anfitrión</span>
               </button>
             </div>
 
@@ -211,17 +212,17 @@
                 <input id="lan-port" class="text-input" type="number" min="1024" max="65535" value="5891" style="width:120px">
               </div>
               <div class="form-block">
-                <label class="form-label">Tu IP en esta red (compÃ¡rtela con el rival)</label>
-                <div id="lan-local-ips" class="lan-ips" data-dev="lan-local-ips">Detectandoâ€¦</div>
+                <label class="form-label">Tu IP en esta red (compártela con el rival)</label>
+                <div id="lan-local-ips" class="lan-ips" data-dev="lan-local-ips">Detectando…</div>
               </div>
-              <p class="muted" style="font-size:12px;">El rival abre Â«Unirme (LAN)Â» e introduce esta direcciÃ³n, p. ej. 192.168.1.50:5891</p>
+              <p class="muted" style="font-size:12px;">El rival abre «Unirme (LAN)» e introduce esta dirección, p. ej. 192.168.1.50:5891</p>
               <button id="btn-lan-start" class="btn btn-primary btn-big" data-dev="btn-lan-start">Crear sala ahora</button>
             </div>
 
             <div id="lan-join-panel" class="lan-panel hidden">
-              <p class="muted" style="font-size:12px;margin-bottom:8px;">El anfitriÃ³n te verÃ¡ aparecer en cuanto conectes. PÃ­dele su IP:puerto (la ve en su pantalla al crear la sala).</p>
+              <p class="muted" style="font-size:12px;margin-bottom:8px;">El anfitrión te verá aparecer en cuanto conectes. Pídele su IP:puerto (la ve en su pantalla al crear la sala).</p>
               <div class="form-block">
-                <label class="form-label" for="lan-host-ip">IP del anfitriÃ³n (ej. 192.168.1.50)</label>
+                <label class="form-label" for="lan-host-ip">IP del anfitrión (ej. 192.168.1.50)</label>
                 <input id="lan-host-ip" class="text-input" type="text" placeholder="192.168.1.50 o 192.168.1.50:5891" maxlength="22" autocomplete="off" spellcheck="false" inputmode="decimal">
               </div>
               <div class="form-block">
@@ -236,11 +237,11 @@
             <div class="online-remote-info" id="btn-online-remote-info" role="button" tabindex="0" aria-label="Ver perfil del rival">
               <div class="avatar online-remote-avatar" id="online-remote-avatar">R</div>
               <div class="online-remote-meta">
-                <div class="online-remote-name" id="online-remote-name">Rival en lÃ­nea</div>
+                <div class="online-remote-name" id="online-remote-name">Rival en línea</div>
                 <div class="online-remote-handle" id="online-remote-handle">@jugador</div>
                 <div class="online-remote-stats" id="online-remote-stats">0 partidas</div>
               </div>
-              <span class="online-remote-chevron">â€º</span>
+              <span class="online-remote-chevron">›</span>
             </div>
             <button id="btn-online-view-remote" class="btn btn-small btn-secondary">Ver perfil</button>
           </div>
@@ -248,10 +249,10 @@
           <button id="btn-online-back" class="btn btn-ghost" data-dev="btn-online-back">Volver</button>
         </section>
 
-        <!-- ============ CREAR SALA (configuraciÃ³n) ============ -->
+        <!-- ============ CREAR SALA (configuración) ============ -->
         <section id="screen-create-room" class="screen" data-dev="screen-create-room">
           <h2 class="screen-title" data-dev="create-title">Crear sala</h2>
-          <p class="muted" data-dev="create-sub">Configura la partida. Al crear se genera el cÃ³digo para compartir.</p>
+          <p class="muted" data-dev="create-sub">Configura la partida. Al crear se genera el código para compartir.</p>
 
           <div class="form-block" data-dev="create-mode">
             <label class="form-label">Modo</label>
@@ -268,18 +269,18 @@
           <div class="form-block" data-dev="create-clock">
             <label class="form-label" for="clock-online">Reloj</label>
             <select id="clock-online" class="select" data-dev="clock-online">
-              <option value="0">Sin lÃ­mite</option>
-              <option value="60+0">Bullet Â· 1+0</option>
-              <option value="120+1">Bullet Â· 2+1</option>
-              <option value="180+0">Blitz Â· 3+0</option>
-              <option value="180+2">Blitz Â· 3+2</option>
-              <option value="300+0" selected>Blitz Â· 5+0</option>
-              <option value="300+3">Blitz Â· 5+3</option>
-              <option value="600+0">RÃ¡pida Â· 10+0</option>
-              <option value="600+5">RÃ¡pida Â· 10+5</option>
-              <option value="900+10">RÃ¡pida Â· 15+10</option>
-              <option value="1800+0">ClÃ¡sica Â· 30+0</option>
-              <option value="custom">Personalizadoâ€¦</option>
+              <option value="0">Sin límite</option>
+              <option value="60+0">Bullet · 1+0</option>
+              <option value="120+1">Bullet · 2+1</option>
+              <option value="180+0">Blitz · 3+0</option>
+              <option value="180+2">Blitz · 3+2</option>
+              <option value="300+0" selected>Blitz · 5+0</option>
+              <option value="300+3">Blitz · 5+3</option>
+              <option value="600+0">Rápida · 10+0</option>
+              <option value="600+5">Rápida · 10+5</option>
+              <option value="900+10">Rápida · 15+10</option>
+              <option value="1800+0">Clásica · 30+0</option>
+              <option value="custom">Personalizado…</option>
             </select>
             <div class="custom-clock hidden" id="custom-clock-online" data-dev="custom-clock-online">
               <div class="custom-clock-field">
@@ -303,25 +304,25 @@
           </div>
 
           <div class="form-block" data-dev="create-code">
-            <label class="form-label">CÃ³digo de la sala</label>
+            <label class="form-label">Código de la sala</label>
             <div class="code-switch-row" style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-              <label style="font-size:12px;color:var(--muted);white-space:nowrap;">CÃ³digo automÃ¡tico</label>
+              <label style="font-size:12px;color:var(--muted);white-space:nowrap;">Código automático</label>
               <label class="switch" style="cursor:pointer;">
                 <input type="checkbox" id="switch-own-code">
                 <span class="switch-slider"></span>
               </label>
-              <label style="font-size:12px;color:var(--muted);white-space:nowrap;">CÃ³digo propio</label>
+              <label style="font-size:12px;color:var(--muted);white-space:nowrap;">Código propio</label>
             </div>
             <div class="code-row" id="code-row-gen">
-              <input id="online-code" class="text-input code-input" type="text" maxlength="12" placeholder="Pulsa Â«GenerarÂ» o escribe el tuyo" autocomplete="off" spellcheck="false">
-              <button id="btn-gen-code" class="btn btn-secondary" title="Generar cÃ³digo automÃ¡tico">Generar</button>
-              <button id="btn-copy-online-code" class="icon-small copy-code-btn" title="Copiar cÃ³digo" aria-label="Copiar cÃ³digo"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6 2v2M2 6h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="6" y="6" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
+              <input id="online-code" class="text-input code-input" type="text" maxlength="12" placeholder="Pulsa «Generar» o escribe el tuyo" autocomplete="off" spellcheck="false">
+              <button id="btn-gen-code" class="btn btn-secondary" title="Generar código automático">Generar</button>
+              <button id="btn-copy-online-code" class="icon-small copy-code-btn" title="Copiar código" aria-label="Copiar código"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6 2v2M2 6h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="6" y="6" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
             </div>
             <div class="code-row hidden" id="code-row-own">
-              <input id="online-code-own" class="text-input code-input" type="text" maxlength="12" placeholder="Escribe tu cÃ³digo (4-12)" autocomplete="off" spellcheck="false">
-              <button id="btn-copy-own-code" class="icon-small copy-code-btn" title="Copiar cÃ³digo" aria-label="Copiar cÃ³digo"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6 2v2M2 6h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="6" y="6" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
+              <input id="online-code-own" class="text-input code-input" type="text" maxlength="12" placeholder="Escribe tu código (4-12)" autocomplete="off" spellcheck="false">
+              <button id="btn-copy-own-code" class="icon-small copy-code-btn" title="Copiar código" aria-label="Copiar código"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6 2v2M2 6h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="6" y="6" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button>
             </div>
-            <div class="muted create-code-hint">VacÃ­o = cÃ³digo automÃ¡tico del sistema.</div>
+            <div class="muted create-code-hint">Vacío = código automático del sistema.</div>
           </div>
 
           <div id="create-status" class="online-status" data-dev="create-status"></div>
@@ -329,13 +330,13 @@
           <button id="btn-create-back" class="btn btn-ghost" data-dev="btn-create-back">Volver</button>
         </section>
 
-        <!-- ============ UNIRSE CON CÃ“DIGO ============ -->
+        <!-- ============ UNIRSE CON CÓDIGO ============ -->
         <section id="screen-join-room" class="screen" data-dev="screen-join-room">
-          <h2 class="screen-title" data-dev="join-title">Unirme con cÃ³digo</h2>
-          <p class="muted" data-dev="join-sub">Introduce los dÃ­gitos que te pasÃ³ el anfitriÃ³n.</p>
+          <h2 class="screen-title" data-dev="join-title">Unirme con código</h2>
+          <p class="muted" data-dev="join-sub">Introduce los dígitos que te pasó el anfitrión.</p>
 
           <div class="form-block" data-dev="join-code">
-            <label class="form-label" for="join-code">CÃ³digo de la sala</label>
+            <label class="form-label" for="join-code">Código de la sala</label>
             <input id="join-code" class="text-input code-input" type="text" maxlength="12" placeholder="Ej: 4XKQ2A" autocomplete="off" spellcheck="false">
           </div>
 
@@ -345,8 +346,8 @@
 
         <!-- ============ LOBBY (host configura / guest espera) ============ -->
         <section id="screen-lobby" class="screen" data-dev="screen-lobby">
-          <h2 class="screen-title" data-dev="lobby-title">Sala <span id="lobby-code" class="accent">------</span><small id="lobby-code-hint" class="muted">â€” CÃ³digo para compartir con tu rival</small><button id="btn-copy-lobby-code" class="icon-small copy-code-btn" title="Copiar cÃ³digo" aria-label="Copiar cÃ³digo"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6 2v2M2 6h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="6" y="6" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button></h2>
-          <div id="lobby-status" class="lobby-status" data-dev="lobby-status">Esperando al rivalâ€¦</div>
+          <h2 class="screen-title" data-dev="lobby-title">Sala <span id="lobby-code" class="accent">------</span><small id="lobby-code-hint" class="muted">— Código para compartir con tu rival</small><button id="btn-copy-lobby-code" class="icon-small copy-code-btn" title="Copiar código" aria-label="Copiar código"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6 2v2M2 6h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="6" y="6" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button></h2>
+          <div id="lobby-status" class="lobby-status" data-dev="lobby-status">Esperando al rival…</div>
           <div id="lobby-rival-profile" class="lobby-rival-profile hidden" data-dev="lobby-rival-profile">
             <div class="avatar" id="lobby-rival-avatar">R</div>
             <div class="lobby-rival-info">
@@ -369,7 +370,7 @@
 
           <div id="lobby-guest-waiting" class="hidden">
             <div class="waiting-spinner"></div>
-            <p class="muted">Esperando a que el anfitriÃ³n empieceâ€¦</p>
+            <p class="muted">Esperando a que el anfitrión empiece…</p>
           </div>
 
           <button id="btn-lobby-back" class="btn btn-ghost" data-dev="btn-lobby-back">Cancelar sala</button>
@@ -410,13 +411,13 @@
                 <label class="form-label">Paquete de sonidos</label>
                 <div class="seg" id="seg-soundpack">
                   <button data-v="gm">GM</button>
-                  <button data-v="clasico">ClÃ¡sico</button>
+                  <button data-v="clasico">Clásico</button>
                 </div>
               </div>
 
               <div class="form-block" data-dev="settings-engine">
                 <label class="form-label">Motor de IA</label>
-                <div class="muted" style="font-size:12px;line-height:1.5;">Stockfish â€” fuerza ajustable desde â‰ˆ400 hasta 3190 Elo segÃºn la dificultad elegida.</div>
+                <div class="muted" style="font-size:12px;line-height:1.5;">Stockfish — fuerza ajustable desde ≈400 hasta 3190 Elo según la dificultad elegida.</div>
               </div>
 
               <div class="form-block row" data-dev="settings-premove">
@@ -435,18 +436,18 @@
               </div>
 
               <div class="form-block row" data-dev="settings-check">
-                <label class="form-label">IndicaciÃ³n de jaque</label>
+                <label class="form-label">Indicación de jaque</label>
                 <button id="toggle-check" class="toggle on" role="switch" aria-checked="true">ON</button>
               </div>
 
               <div class="form-block row" data-dev="settings-last-move">
-                <label class="form-label">Ãšltimo movimiento</label>
+                <label class="form-label">Último movimiento</label>
                 <button id="toggle-last-move" class="toggle on" role="switch" aria-checked="true">ON</button>
               </div>
 
               <div class="form-block privacy-card" data-dev="settings-privacy">
-                <label class="form-label">Privacidad (partidas en lÃ­nea)</label>
-                <p class="privacy-note">Elige quÃ© compartes con el rival conectado. Todo estÃ¡ activado por defecto; nada de esto te afecta si juegas vs IA.</p>
+                <label class="form-label">Privacidad (partidas en línea)</label>
+                <p class="privacy-note">Elige qué compartes con el rival conectado. Todo está activado por defecto; nada de esto te afecta si juegas vs IA.</p>
                 <div class="privacy-rows">
                   <div class="privacy-row">
                     <div class="privacy-text">
@@ -458,21 +459,21 @@
                   <div class="privacy-row">
                     <div class="privacy-text">
                       <div class="privacy-title">Mostrar mi @handle y nombre</div>
-                      <div class="privacy-sub">Si lo desactivas, juegas como Â«RivalÂ» anÃ³nimo</div>
+                      <div class="privacy-sub">Si lo desactivas, juegas como «Rival» anónimo</div>
                     </div>
                     <button id="toggle-share-identity" class="toggle on" role="switch" aria-checked="true">ON</button>
                   </div>
                   <div class="privacy-row">
                     <div class="privacy-text">
-                      <div class="privacy-title">Compartir estadÃ­sticas (victorias/empates/derrotas)</div>
-                      <div class="privacy-sub">El rival ve tu rÃ©cord; si no, verÃ¡ 0/0/0</div>
+                      <div class="privacy-title">Compartir estadísticas (victorias/empates/derrotas)</div>
+                      <div class="privacy-sub">El rival ve tu récord; si no, verá 0/0/0</div>
                     </div>
                     <button id="toggle-share-stats" class="toggle on" role="switch" aria-checked="true">ON</button>
                   </div>
                   <div class="privacy-row">
                     <div class="privacy-text">
                       <div class="privacy-title">Compartir historial de partidas</div>
-                      <div class="privacy-sub">EnvÃ­a tus Ãºltimas 30 partidas (PGN, rivales y fechas). DesactÃ­valo para no enviar nada</div>
+                      <div class="privacy-sub">Envía tus últimas 30 partidas (PGN, rivales y fechas). Desactívalo para no enviar nada</div>
                     </div>
                     <button id="toggle-share-history" class="toggle on" role="switch" aria-checked="true">ON</button>
                   </div>
@@ -523,7 +524,7 @@
               <button class="player-bar" id="card-us" data-dev="card-us" aria-label="Ver mi perfil">
                 <div class="avatar" id="avatar-us">T</div>
                 <div class="player-info">
-                  <div class="player-name" id="name-us">TÃº</div>
+                  <div class="player-name" id="name-us">Tú</div>
                   <div class="player-role" id="role-us">Blancas</div>
                 </div>
                 <div class="clock" id="clock-us" data-dev="clock-us">5:00</div>
@@ -551,7 +552,7 @@
                 <button id="btn-ply-prev" class="icon-small" title="Anterior" aria-label="Anterior" data-dev="btn-ply-prev">
                   <svg viewBox="0 0 16 16"><path d="M11 3L5.5 8 11 13z" fill="currentColor"/></svg>
                 </button>
-                <button id="btn-play-auto" class="icon-small" title="ReproducciÃ³n automÃ¡tica" aria-label="ReproducciÃ³n automÃ¡tica" data-dev="btn-play-auto">
+                <button id="btn-play-auto" class="icon-small" title="Reproducción automática" aria-label="Reproducción automática" data-dev="btn-play-auto">
                   <svg viewBox="0 0 16 16"><polygon points="4,3 13,8 4,13" fill="currentColor"/></svg>
                 </button>
                 <button id="btn-ply-next" class="icon-small" title="Siguiente" aria-label="Siguiente" data-dev="btn-ply-next">
@@ -561,7 +562,7 @@
                   <svg viewBox="0 0 16 16"><path d="M11 3h2v10h-2zM3 3l6.5 5L3 13z" fill="currentColor"/></svg>
                 </button>
                 <span id="ply-indicator" class="ply-indicator" data-dev="ply-indicator">0/0</span>
-                <select id="playback-speed" class="speed-select" title="Velocidad de reproducciÃ³n" aria-label="Velocidad de reproducciÃ³n">
+                <select id="playback-speed" class="speed-select" title="Velocidad de reproducción" aria-label="Velocidad de reproducción">
                   <option value="0.5">0.5x</option>
                   <option value="1" selected>1x</option>
                   <option value="2">2x</option>
@@ -572,20 +573,20 @@
                 <button id="btn-offer-draw" class="btn btn-small" data-dev="btn-offer-draw">Tablas</button>
                 <button id="btn-resign" class="btn btn-small btn-danger" data-dev="btn-resign">Rendirse</button>
                 <button id="btn-new-game" class="btn btn-small" data-dev="btn-new-game">Nueva</button>
-                <button id="btn-leave" class="btn btn-small btn-ghost" data-dev="btn-leave">MenÃº</button>
+                <button id="btn-leave" class="btn btn-small btn-ghost" data-dev="btn-leave">Menú</button>
               </div>
               <div class="game-actions hidden" id="game-actions-review" data-dev="game-actions-review">
                 <button id="btn-copy-pgn" class="btn btn-small" data-dev="btn-copy-pgn">Copiar PGN</button>
                 <button id="btn-download-pgn" class="btn btn-small" data-dev="btn-download-pgn">Descargar PGN</button>
-                <button id="btn-exit-review" class="btn btn-small btn-ghost" data-dev="btn-exit-review">Salir revisiÃ³n</button>
+                <button id="btn-exit-review" class="btn btn-small btn-ghost" data-dev="btn-exit-review">Salir revisión</button>
               </div>
             </aside>
           </div>
 
-          <!-- PromociÃ³n -->
+          <!-- Promoción -->
           <div id="promotion-modal" class="modal" data-dev="promotion-modal">
             <div class="modal-content">
-              <h3>Promover peÃ³n a</h3>
+              <h3>Promover peón a</h3>
               <div id="promotion-options" class="promotion-options"></div>
             </div>
           </div>
@@ -612,7 +613,7 @@
               <div class="end-avatars" data-dev="end-avatars">
                 <button id="end-player-me" class="end-player" type="button" title="Ver mi perfil" data-dev="end-player-me">
                   <div class="end-avatar" id="end-avatar-me" data-dev="end-avatar-me">T</div>
-                  <div class="end-name" id="end-name-me" data-dev="end-name-me">TÃº</div>
+                  <div class="end-name" id="end-name-me" data-dev="end-name-me">Tú</div>
                 </button>
                 <div class="end-vs">VS</div>
                 <button id="end-player-opp" class="end-player" type="button" title="Ver perfil del rival" data-dev="end-player-opp">
@@ -626,15 +627,15 @@
               <div class="end-options" id="end-options" data-dev="end-options">
                 <button class="end-option" id="btn-same-game" data-dev="btn-same-game">
                   <span class="end-option-title">Repetir partida</span>
-                  <span class="end-option-sub">Mismo color Â· misma cuenta</span>
+                  <span class="end-option-sub">Mismo color · misma cuenta</span>
                 </button>
                 <button class="end-option" id="btn-random-game" data-dev="btn-random-game">
                   <span class="end-option-title">Nuevo color</span>
-                  <span class="end-option-sub">Aleatorio Â· siguiente partida</span>
+                  <span class="end-option-sub">Aleatorio · siguiente partida</span>
                 </button>
                 <button class="end-option end-option-highlight hidden" id="btn-next-tournament" data-dev="btn-next-tournament">
                   <span class="end-option-title">Siguiente torneo</span>
-                  <span class="end-option-sub" id="btn-next-tournament-sub">Partida N+1 Â· color alternado</span>
+                  <span class="end-option-sub" id="btn-next-tournament-sub">Partida N+1 · color alternado</span>
                 </button>
                 <button class="end-option" id="btn-replay-pgn" data-dev="btn-replay-pgn">
                   <span class="end-option-title">Reproducir PGN</span>
@@ -666,14 +667,14 @@
 
           <div class="profile-tabs" data-dev="profile-tabs">
             <button class="profile-tab active" id="profile-tab-games" data-dev="profile-tab-games">Partidas</button>
-            <button class="profile-tab" id="profile-tab-stats" data-dev="profile-tab-stats">EstadÃ­sticas</button>
+            <button class="profile-tab" id="profile-tab-stats" data-dev="profile-tab-stats">Estadísticas</button>
           </div>
 
           <div class="profile-filters-wrap">
             <div class="profile-filters" id="profile-filters" data-dev="profile-filters">
               <button data-f="all" class="selected">Todas</button>
               <button data-f="ai">vs IA</button>
-              <button data-f="online">En lÃ­nea</button>
+              <button data-f="online">En línea</button>
             </div>
             <div class="history-view-toggle profile-view-toggle" id="profile-view-toggle" data-dev="profile-view-toggle" role="group" aria-label="Modo de vista">
               <button data-view="grid" class="selected" title="Tarjetas grandes" aria-label="Tarjetas grandes">
@@ -691,7 +692,7 @@
           </div>
           </div>
 
-          <div id="profile-games-grid" class="games-grid" data-dev="profile-games-grid"></div><div id="profile-empty" class="profile-empty hidden" data-dev="profile-empty">AÃºn no hay partidas guardadas.<br>Juega una y aparecerÃ¡ aquÃ­.</div>
+          <div id="profile-games-grid" class="games-grid" data-dev="profile-games-grid"></div><div id="profile-empty" class="profile-empty hidden" data-dev="profile-empty">Aún no hay partidas guardadas.<br>Juega una y aparecerá aquí.</div>
 
           <div id="profile-stats-panel" class="stats-panel hidden" data-dev="profile-stats-panel">
             <div class="chart-grid">
@@ -699,9 +700,9 @@
                 <div class="chart-head">
                   <div>
                     <h3 class="chart-title">Resumen general</h3>
-                    <p class="chart-desc">CuÃ¡ntas partidas has <b>ganado</b>, <b>empatado</b> o <b>perdido</b>, cuÃ¡ntas jugaste con <b>blancas</b> o <b>negras</b>, y cuÃ¡ntas fueron <b>vs IA</b> o <b>en lÃ­nea</b>. Suma de cada categorÃ­a, no un porcentaje.</p>
+                    <p class="chart-desc">Cuántas partidas has <b>ganado</b>, <b>empatado</b> o <b>perdido</b>, cuántas jugaste con <b>blancas</b> o <b>negras</b>, y cuántas fueron <b>vs IA</b> o <b>en línea</b>. Suma de cada categoría, no un porcentaje.</p>
                   </div>
-                  <button class="icon-btn chart-expand-btn" data-expand="chart-summary" title="Ver en grande" aria-label="Ver Resumen general en grande">â¤¢</button>
+                  <button class="icon-btn chart-expand-btn" data-expand="chart-summary" title="Ver en grande" aria-label="Ver Resumen general en grande">⤢</button>
                 </div>
                 <div id="chart-summary" class="chart"></div>
                 <div class="summary-chips" id="summary-chips"></div>
@@ -710,19 +711,19 @@
                 <div class="chart-head">
                   <div>
                     <h3 class="chart-title">Flujo de partidas</h3>
-                    <p class="chart-desc">CÃ³mo se reparte cada partida: <b>tu color</b> â†’ <b>tu resultado</b> â†’ <b>cÃ³mo terminÃ³</b> (mate, tiempo, abandonoâ€¦). Las bandas son partidas reales, no porcentajes.</p>
+                    <p class="chart-desc">Cómo se reparte cada partida: <b>tu color</b> → <b>tu resultado</b> → <b>cómo terminó</b> (mate, tiempo, abandono…). Las bandas son partidas reales, no porcentajes.</p>
                   </div>
-                  <button class="icon-btn chart-expand-btn" data-expand="chart-flow" title="Ver en grande" aria-label="Ver Flujo de partidas en grande">â¤¢</button>
+                  <button class="icon-btn chart-expand-btn" data-expand="chart-flow" title="Ver en grande" aria-label="Ver Flujo de partidas en grande">⤢</button>
                 </div>
                 <div id="chart-flow" class="chart"></div>
               </div>
               <div class="chart-block" data-dev="chart-openings" data-chart="chart-openings">
                 <div class="chart-head">
                   <div>
-                    <h3 class="chart-title">Aperturas mÃ¡s usadas</h3>
-                    <p class="chart-desc">Primer y segundo jugada de tus partidas. El color indica frecuencia: <span class="heat-chip heat-cold">azul</span> = poco usada, <span class="heat-chip heat-mid">naranja</span> = media, <span class="heat-chip heat-hot">rojo</span> = muy usada. Pasa el mouse sobre cada nodo para ver cuÃ¡ntas veces.</p>
+                    <h3 class="chart-title">Aperturas más usadas</h3>
+                    <p class="chart-desc">Primer y segundo jugada de tus partidas. El color indica frecuencia: <span class="heat-chip heat-cold">azul</span> = poco usada, <span class="heat-chip heat-mid">naranja</span> = media, <span class="heat-chip heat-hot">rojo</span> = muy usada. Pasa el mouse sobre cada nodo para ver cuántas veces.</p>
                   </div>
-                  <button class="icon-btn chart-expand-btn" data-expand="chart-openings" title="Ver en grande" aria-label="Ver Aperturas en grande">â¤¢</button>
+                  <button class="icon-btn chart-expand-btn" data-expand="chart-openings" title="Ver en grande" aria-label="Ver Aperturas en grande">⤢</button>
                 </div>
                 <div id="chart-openings" class="chart"></div>
               </div>
@@ -730,9 +731,9 @@
                 <div class="chart-head">
                   <div>
                     <h3 class="chart-title">Progreso de resultados</h3>
-                    <p class="chart-desc">% de victorias acumulado a medida que avanzas las partidas (P1, P2, P3â€¦). Compara tu rendimiento <b>total</b>, <b>vs IA</b> y <b>en lÃ­nea</b>.</p>
+                    <p class="chart-desc">% de victorias acumulado a medida que avanzas las partidas (P1, P2, P3…). Compara tu rendimiento <b>total</b>, <b>vs IA</b> y <b>en línea</b>.</p>
                   </div>
-                  <button class="icon-btn chart-expand-btn" data-expand="chart-progress" title="Ver en grande" aria-label="Ver Progreso en grande">â¤¢</button>
+                  <button class="icon-btn chart-expand-btn" data-expand="chart-progress" title="Ver en grande" aria-label="Ver Progreso en grande">⤢</button>
                 </div>
                 <div id="chart-progress" class="chart"></div>
               </div>
@@ -740,14 +741,14 @@
                 <div class="chart-head">
                   <div>
                     <h3 class="chart-title">Resultados por color</h3>
-                    <p class="chart-desc">Acumulado de <b>ganadas / empatadas / perdidas</b> jugando con blancas (lÃ­neas sÃ³lidas) y con negras (lÃ­neas discontinuas). Sirve para ver si rindes mejor con un color.</p>
+                    <p class="chart-desc">Acumulado de <b>ganadas / empatadas / perdidas</b> jugando con blancas (líneas sólidas) y con negras (líneas discontinuas). Sirve para ver si rindes mejor con un color.</p>
                   </div>
-                  <button class="icon-btn chart-expand-btn" data-expand="chart-colorform" title="Ver en grande" aria-label="Ver Resultados por color en grande">â¤¢</button>
+                  <button class="icon-btn chart-expand-btn" data-expand="chart-colorform" title="Ver en grande" aria-label="Ver Resultados por color en grande">⤢</button>
                 </div>
                 <div id="chart-colorform" class="chart"></div>
               </div>
             </div>
-            <button id="btn-reset-stats" class="btn btn-danger btn-small" style="margin-top:16px;" data-dev="btn-reset-stats">Reiniciar estadÃ­sticas y borrar historial</button>
+            <button id="btn-reset-stats" class="btn btn-danger btn-small" style="margin-top:16px;" data-dev="btn-reset-stats">Reiniciar estadísticas y borrar historial</button>
           </div>
         </section>
 
@@ -760,7 +761,7 @@
           <div class="profile-filters" id="history-filters" data-dev="history-filters">
             <button data-f="all" class="selected">Todas</button>
             <button data-f="ai">vs IA</button>
-            <button data-f="online">En lÃ­nea</button>
+            <button data-f="online">En línea</button>
           </div>
           <div class="history-view-toggle" id="history-view-toggle" data-dev="history-view-toggle" role="group" aria-label="Modo de vista del historial">
             <button data-view="grid" class="selected" title="Tarjetas grandes" aria-label="Tarjetas grandes">
@@ -777,7 +778,7 @@
             </button>
           </div>
           <div id="history-grid" class="games-grid" data-dev="history-grid"></div>
-          <div id="history-empty" class="profile-empty hidden" data-dev="history-empty">AÃºn no hay partidas guardadas.</div>
+          <div id="history-empty" class="profile-empty hidden" data-dev="history-empty">Aún no hay partidas guardadas.</div>
         </section>
 
       </main>
@@ -787,8 +788,8 @@
     <div id="conn-anim" class="conn-anim" data-dev="conn-anim" aria-hidden="true">
       <div class="conn-anim-card">
         <div class="conn-cat-sprite" id="conn-cat" role="img" aria-label=""></div>
-        <div class="conn-anim-label">ConexiÃ³n establecida</div>
-        <div class="conn-anim-sub">Sincronizando perfilesâ€¦</div>
+        <div class="conn-anim-label">Conexión establecida</div>
+        <div class="conn-anim-sub">Sincronizando perfiles…</div>
       </div>
     </div>
   </div>
@@ -807,9 +808,9 @@
       </div>
       <label class="form-label" for="edit-handle">Usuario</label>
       <input id="edit-handle" class="text-input" type="text" maxlength="24" placeholder="introducir nombre" autocomplete="off" spellcheck="false" data-dev="edit-handle">
-      <p class="muted edit-hint" style="margin:-4px 0 12px;">Si lo dejas vacÃ­o se usarÃ¡ Â«JugadorÂ».</p>
+      <p class="muted edit-hint" style="margin:-4px 0 12px;">Si lo dejas vacío se usará «Jugador».</p>
       <label class="form-label" for="edit-bio">Bio</label>
-      <textarea id="edit-bio" class="text-input edit-bio" rows="2" maxlength="120" placeholder="Bio breveâ€¦" data-dev="edit-bio"></textarea>
+      <textarea id="edit-bio" class="text-input edit-bio" rows="2" maxlength="120" placeholder="Bio breve…" data-dev="edit-bio"></textarea>
       <div class="modal-actions">
         <button id="btn-cancel-profile" class="btn btn-ghost" data-dev="btn-cancel-profile">Cancelar</button>
         <button id="btn-save-profile" class="btn btn-primary" data-dev="btn-save-profile">Guardar</button>
@@ -857,7 +858,7 @@
   <div id="rail-modal" class="modal" data-dev="rail-modal">
     <div class="modal-content rail-edit">
       <h2>Personalizar barra</h2>
-      <p class="muted">Elige quÃ© accesos quieres tener siempre a la izquierda.</p>
+      <p class="muted">Elige qué accesos quieres tener siempre a la izquierda.</p>
       <div id="rail-list" class="rail-list" data-dev="rail-list"></div>
       <div class="modal-actions">
         <button id="btn-reset-rail" class="btn btn-ghost" data-dev="btn-reset-rail">Restablecer</button>
@@ -874,7 +875,7 @@
           <h2 id="sg-result">Partida</h2>
           <div id="sg-sub" class="muted" data-dev="sg-sub"></div>
         </div>
-        <button id="sg-close" class="icon-btn" aria-label="Cerrar" data-dev="sg-close">â€”</button>
+        <button id="sg-close" class="icon-btn" aria-label="Cerrar" data-dev="sg-close">—</button>
       </div>
       <div id="sg-moves" class="move-list saved-game-moves" data-dev="sg-moves"></div>
       <div class="modal-actions">
@@ -889,25 +890,25 @@
     <div class="modal-content chart-expand-content">
       <div class="chart-expand-head">
         <div>
-          <h2 id="chart-expand-title">GrÃ¡fica</h2>
+          <h2 id="chart-expand-title">Gráfica</h2>
           <p id="chart-expand-desc" class="chart-desc"></p>
         </div>
-        <button id="chart-expand-close" class="icon-btn" aria-label="Cerrar" data-dev="chart-expand-close">â€”</button>
+        <button id="chart-expand-close" class="icon-btn" aria-label="Cerrar" data-dev="chart-expand-close">—</button>
       </div>
       <div id="chart-expand-body" class="chart chart-expand-body"></div>
     </div>
   </div>
 
-  <script src="js/firebase-config.js?v=20261116"></script>
-  <script src="js/pieces.js?v=20261116"></script>
-  <script src="js/sounds.js?v=20261116"></script>
-  <script src="js/engine.js?v=20261116"></script>
-  <script src="js/net.js?v=20261116"></script>
-  <script src="js/lan.js?v=20261116"></script>
-  <script src="js/profile.js?v=20261116"></script>
-  <script src="js/stats.js?v=20261116"></script>
-  <script src="js/inspector.js?v=20261116"></script>
-  <script src="js/app.js?v=20261116"></script>
-  <script src="js/update.js?v=20261116"></script>
+  <script src="js/firebase-config.js?v=20261117"></script>
+  <script src="js/pieces.js?v=20261117"></script>
+  <script src="js/sounds.js?v=20261117"></script>
+  <script src="js/engine.js?v=20261117"></script>
+  <script src="js/net.js?v=20261117"></script>
+  <script src="js/lan.js?v=20261117"></script>
+  <script src="js/profile.js?v=20261117"></script>
+  <script src="js/stats.js?v=20261117"></script>
+  <script src="js/inspector.js?v=20261117"></script>
+  <script src="js/app.js?v=20261117"></script>
+  <script src="js/update.js?v=20261117"></script>
 </body>
 </html>

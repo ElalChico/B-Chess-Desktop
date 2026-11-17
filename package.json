@@ -1,7 +1,7 @@
 {
   "name": "b-chess-desktop",
   "productName": "B-Chess Desktop",
-  "version": "2.2.7",
+  "version": "2.2.8",
   "description": "B-Chess en el escritorio: ajedrez contra la IA o P2P, compatible con el APK. Se actualiza solo vía GitHub Releases.",
   "author": "Elal Chico",
   "license": "MIT",
@@ -39,6 +39,7 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "B-Chess Desktop",
+      "installerIcon": "icono.ico",
       "deleteAppDataOnUninstall": false,
       "installerHeader": "assets/installer/installerHeader.bmp",
       "installerSidebar": "assets/installer/installerSidebar.bmp"
@@ -46,7 +47,8 @@
   },
   "scripts": {
     "start": "electron .",
-    "build": "electron-builder --win --x64 --publish never",
+    "build": "node scripts/build-win.js",
+    "build:raw": "electron-builder --win --x64 --publish never",
     "release": "electron-builder --win --x64 --publish always"
   },
   "dependencies": {
@@ -54,6 +56,7 @@
   },
   "devDependencies": {
     "electron": "^33.0.0",
-    "electron-builder": "^25.0.0"
+    "electron-builder": "^25.0.0",
+    "rcedit": "^5.0.2"
   }
 }
