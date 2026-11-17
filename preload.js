@@ -49,5 +49,28 @@ contextBridge.exposeInMainWorld('BCHESS_LAN', {
     };
   },
   // Detecta si estamos en Electron (no navegador)
-  isElectron: true
+  isElectron: true,
+  // Auto-updater nativo — el renderer abre el modal de estilo de la app y dispara
+  // la descarga vía IPC cuando el usuario confirma.
+  onUpdateAvailable: function (callback) {
+    var handler = function (_e, info) { callback(info); };
+    ipcRenderer.on('update-available', handler);
+    return function () { ipcRenderer.removeListener('update-available', handler); };
+  },
+  onUpdateDownloaded: function (callback) {
+    var handler = function (_e, info) { callback(info); };
+    ipcRenderer.on('update-downloaded', handler);
+    return function () { ipcRenderer.removeListener('update-downloaded', handler); };
+  },
+  onUpdateError: function (callback) {
+    var handler = function (_e, err) { callback(err); };
+    ipcRenderer.on('update-error', handler);
+    return function () { ipcRenderer.removeListener('update-error', handler); };
+  },
+  downloadUpdate: function () {
+    return ipcRenderer.invoke('update-download');
+  },
+  quitAndInstall: function () {
+    return ipcRenderer.invoke('update-quit-and-install');
+  }
 });

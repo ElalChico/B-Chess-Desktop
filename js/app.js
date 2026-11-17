@@ -101,6 +101,7 @@
     settings: {
       name: 'Jugador', pieceSet: 'cburnett', boardTheme: 'lichess',
       sound: true, volume: 80, engine: 'stockfish', difficulty: 5, soundPack: 'gm', aiSpeed: 'fast', aiWinStreak: 0,
+      premoveStyle: 'chesscom',
       colorAI: 'r', clockAI: '300+0', colorOnline: 'r', clockOnline: '300+0',
       settingsVersion: 2, homeProfileSummary: true, historyCollapsed: false,
       premove: true,
@@ -1914,6 +1915,7 @@
     syncSeg('#seg-color', S.settings.colorAI);
     syncSeg('#seg-color-online', S.settings.colorOnline);
     syncSeg('#seg-soundpack', S.settings.soundPack || 'gm');
+    syncSeg('#seg-premove-style', (S.settings && S.settings.premoveStyle) || 'chesscom');
 
     var speedSel = $('#ai-speed');
     if (speedSel) speedSel.value = S.settings.aiSpeed || 'normal';
@@ -2788,6 +2790,10 @@
       BCHESS_SOUNDS.play('start');
       saveSettings();
     });
+    bindSeg('#seg-premove-style', function (v) {
+      S.settings.premoveStyle = v;
+      saveSettings(); renderSettingsUI(); renderBoard();
+    });
     var premoveToggle = $('#toggle-premove');
     if (premoveToggle) premoveToggle.addEventListener('click', function () {
       S.settings.premove = (S.settings.premove === false);
@@ -3201,9 +3207,10 @@
     var vg = viewGame();
     var atLive = isFullHistoryInView();
     var fenKey = S.fens[S.viewPly] || 'empty:' + S.viewPly;
+    var pmStyle = (S.settings && S.settings.premoveStyle) || 'chesscom';
     var visualPieces = computeVisualPieces(vg);
     var pmSig = S.premoveQueue.map(pm => pm.from + '>' + (pm.to === null ? '_' : pm.to)).join('|') || 'none';
-    var visualKey = fenKey + '::' + pmSig;
+    var visualKey = fenKey + '::' + pmSig + '::' + pmStyle;
     var lastMove = moveAtPly(S.viewPly);
     var lastSig = (S.settings.showLastMove !== false && lastMove) ? (lastMove.from + '>' + lastMove.to) : 'none';
     var legalOn = S.settings.showLegalMoves !== false;
@@ -3214,7 +3221,7 @@
 
     var piecesChanged = renderCache.fenKey !== fenKey || renderCache.pieceSet !== pieceSet || renderCache.premoveSig !== premoveSig;
     var clsChanged = piecesChanged || renderCache.legalSig !== legalSig || renderCache.lastSig !== lastSig ||
-      renderCache.checkSq !== checkSq || renderCache.atLive !== atLive;
+      renderCache.checkSq !== checkSq || renderCache.atLive !== atLive || (S.premoveQueue && S.premoveQueue.length > 0);
     if (!clsChanged) { updatePlaybackUI(); return; } // nada que pintar
 
     var showLast = S.settings.showLastMove !== false && lastMove;
@@ -3240,6 +3247,18 @@
       }
 
       // Clases
+      var style = (S.settings && S.settings.premoveStyle) || 'chesscom';
+      setCellFlag(rec, 'style-chesscom', style === 'chesscom');
+      setCellFlag(rec, 'style-gm2000', style === 'gm2000');
+      var fromIdx = {}, toIdx = {};
+      if (style !== 'atenuado') {
+        S.premoveQueue.forEach(function (pm) {
+          if (pm.from !== undefined && pm.from !== null) fromIdx[pm.from] = true;
+          if (pm.to !== undefined && pm.to !== null) toIdx[pm.to] = true;
+        });
+      }
+      setCellFlag(rec, 'premove-from', !!fromIdx[sq]);
+      setCellFlag(rec, 'premove-to', !!toIdx[sq]);
       setCellFlag(rec, 'last-move', !!(showLast && lastMove && (lastMove.from === alg || lastMove.to === alg)));
       setCellFlag(rec, 'selected', !!(atLive && S.selected === sq));
       var isLegal = legalOn && atLive && S.legalTargets.indexOf(sq) !== -1;

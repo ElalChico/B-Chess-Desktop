@@ -96,10 +96,6 @@ function setupAutoUpdater() {
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
 
-  autoUpdater.on('error', function (err) {
-    console.error('[updater] error:', err == null ? 'unknown' : (err.stack || err.message || err));
-  });
-
   autoUpdater.on('checking-for-update', function () {
     console.log('[updater] buscando actualizaciones...');
   });
@@ -109,39 +105,21 @@ function setupAutoUpdater() {
     if (updateNotified) return;
     updateNotified = true;
     if (mainWindow && !mainWindow.isDestroyed()) {
-      dialog.showMessageBox(mainWindow, {
-        type: 'info',
-        buttons: ['Descargar y actualizar', 'Más tarde'],
-        defaultId: 0,
-        cancelId: 1,
-        title: 'Actualización disponible',
-        message: 'Hay una versión nueva de B-Chess Desktop (' + info.version + ')',
-        detail: 'Se descargará en segundo plano y se aplicará al reiniciar la app. Tu historial y perfil se conservan.'
-      }).then(function (res) {
-        if (res.response === 0) {
-          autoUpdater.downloadUpdate();
-        }
-      });
+      try { mainWindow.webContents.send('update-available', { version: info.version }); } catch (e) {}
     }
   });
 
-  autoUpdater.on('update-not-available', function (info) {
-    console.log('[updater] estás en la última versión:', info.version);
+  autoUpdater.on('update-downloaded', function (info) {
+    console.log('[updater] update descargada:', info.version);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      try { mainWindow.webContents.send('update-downloaded', { version: info.version }); } catch (e) {}
+    }
   });
 
-  autoUpdater.on('update-downloaded', function (info) {
+  autoUpdater.on('error', function (err) {
+    console.error('[updater] error:', err == null ? 'unknown' : (err.stack || err.message || err));
     if (mainWindow && !mainWindow.isDestroyed()) {
-      dialog.showMessageBox(mainWindow, {
-        type: 'info',
-        buttons: ['Reiniciar y actualizar', 'Al cerrar la app'],
-        defaultId: 0,
-        cancelId: 1,
-        title: 'Actualización lista',
-        message: 'B-Chess Desktop v' + info.version + ' está lista para instalarse',
-        detail: 'Al reiniciar, la nueva versión quedará instalada y tus partidas se conservarán.'
-      }).then(function (res) {
-        if (res.response === 0) autoUpdater.quitAndInstall();
-      });
+      try { mainWindow.webContents.send('update-error', { message: err && err.message }); } catch (e) {}
     }
   });
 
@@ -322,6 +300,21 @@ ipcMain.handle('lan-send', async function (event, target, message) {
   } catch (e) {
     return false;
   }
+});
+
+// Auto-updater — dispara descarga y reinicio desde el renderer
+ipcMain.handle('update-download', async () => {
+  try {
+    await autoUpdater.downloadUpdate();
+    return true;
+  } catch (e) {
+    console.error('[updater] downloadUpdate:', e && e.message ? e.message : e);
+    return false;
+  }
+});
+ipcMain.handle('update-quit-and-install', () => {
+  setImmediate(() => autoUpdater.quitAndInstall());
+  return true;
 });
 
 ipcMain.handle('lan-disconnect', async function () {

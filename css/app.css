@@ -575,6 +575,13 @@ body {
   width: 90%; height: 90%; background: transparent; border: 5px solid var(--sq-legal); border-radius: 50%;
 }
 .square.drag-source .piece { opacity: .15; }
+/* ===== Premove configurable: casillas rojas sin marco (GM-2000 / chess.com) ===== */
+.square.premove-from { background: radial-gradient(circle at 50% 50%, rgba(255,42,109,.55) 0%, rgba(255,42,109,.18) 85%); }
+.square.premove-to { background: radial-gradient(circle at 50% 50%, rgba(255,42,109,.60) 0%, rgba(255,42,109,.20) 80%); }
+.square.premove-from.style-gm2000 { background: radial-gradient(circle at 50% 50%, rgba(255,42,109,.40) 0%, rgba(255,42,109,.12) 80%); }
+.square.premove-to.style-gm2000 { background: radial-gradient(circle at 50% 50%, rgba(255,42,109,.45) 0%, rgba(255,42,109,.16) 80%); }
+.square.premove-from.style-chesscom { background: radial-gradient(circle at 50% 50%, rgba(255,42,109,.50) 0%, rgba(255,42,109,.14) 80%); }
+.square.premove-to.style-chesscom { background: radial-gradient(circle at 50% 50%, rgba(255,42,109,.62) 0%, rgba(255,42,109,.20) 80%); }
 .square .coord { position: absolute; font-size: 9px; font-weight: 700; color: var(--coord); pointer-events: none; z-index: 1; }
 .square .coord.rank { left: 3px; top: 2px; }
 .square .coord.file { right: 4px; bottom: 2px; }
