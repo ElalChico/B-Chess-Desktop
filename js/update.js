@@ -8,7 +8,7 @@
 window.BCHESS_UPDATE = (function () {
   'use strict';
 
-  var CURRENT_VERSION = '2.2.15';
+  var CURRENT_VERSION = '2.2.16';
   var REPO = 'ElalChico/B-Chess-Desktop';
   var CHECK_URL = 'https://api.github.com/repos/' + REPO + '/releases/latest';
 
@@ -53,7 +53,7 @@ window.BCHESS_UPDATE = (function () {
   }
 
   // ---------- Modal de actualización estilizado ----------
-  var modalState = { version: null, downloaded: false };
+  var modalState = { version: null, downloaded: false, notes: '', downloading: false, progress: 0 };
 
   function openModal(opts) {
     opts = opts || {};
@@ -68,16 +68,42 @@ window.BCHESS_UPDATE = (function () {
 
     var ver = opts.version || modalState.version || CURRENT_VERSION;
     var downloaded = !!opts.downloaded;
+    var downloading = !!opts.downloading;
+    var progress = Number(opts.progress || 0);
+
     modalState.version = ver;
     modalState.downloaded = downloaded;
+    modalState.downloading = downloading;
+    modalState.progress = progress;
 
     if (title) title.textContent = 'B-Chess Desktop v' + ver;
     if (notes) notes.textContent = opts.notes || '';
-    if (badge) badge.textContent = downloaded ? 'Lista para instalar' : 'Actualización disponible';
-    if (nowTitle) nowTitle.textContent = downloaded ? 'Reiniciar ahora' : 'Descargar e instalar';
-    if (nowSub) nowSub.textContent = downloaded ? 'Se aplicará el reinicio' : 'Se aplicará al reiniciar';
+    if (badge) badge.textContent = downloaded ? 'Lista para instalar' : (downloading ? 'Descargando… ' + Math.round(progress) + '%' : 'Actualización disponible');
+    if (nowTitle) nowTitle.textContent = downloaded ? 'Reiniciar ahora' : (downloading ? 'Cancelar aviso' : 'Descargar e instalar');
+    if (nowSub) nowSub.textContent = downloaded ? 'Se aplicará el reinicio' : (downloading ? 'Ya está en marcha…' : 'Se aplicará al reiniciar');
 
     modal.classList.add('show');
+  }
+
+  function setProgress(p) {
+    var pct = Math.max(0, Math.min(100, p || 0));
+    var notes = document.getElementById('update-notes');
+    var badge = document.getElementById('update-badge');
+    if (badge) badge.textContent = 'Descargando… ' + Math.round(pct) + '%';
+    if (notes) {
+      notes.textContent = 'Descargando B-Chess Desktop v' + (modalState.version || CURRENT_VERSION) + ' desde GitHub… ' + Math.round(pct) + '%';
+    }
+  }
+
+  function setError(message) {
+    var notes = document.getElementById('update-notes');
+    var badge = document.getElementById('update-badge');
+    var nowTitle = document.querySelector('#btn-update-now .end-option-title');
+    var nowSub = document.querySelector('#btn-update-now .end-option-sub');
+    if (badge) badge.textContent = 'Error de actualización';
+    if (notes) notes.textContent = 'No se pudo descargar la actualización:\n' + (message || 'fallo desconocido');
+    if (nowTitle) nowTitle.textContent = 'Reintentar';
+    if (nowSub) nowSub.textContent = 'Pulsa para volver a intentar la descarga';
   }
 
   function closeModal() {
@@ -90,16 +116,18 @@ window.BCHESS_UPDATE = (function () {
     var nowBtn = document.getElementById('btn-update-now');
     if (laterBtn) laterBtn.addEventListener('click', closeModal);
     if (nowBtn) nowBtn.addEventListener('click', function () {
-      closeModal();
       // Si ya estaba descargada (Electron), reiniciar para aplicar.
-      // Si no, disparar la descarga; el "downloaded" llegará como segundo evento
-      // y el modal se reabre con el botón de "Reiniciar ahora".
+      // Si no, disparar la descarga manualmente (es efectuada automáticamente al arrancar).
       var isElectron = !!(window.BCHESS_DESKTOP && window.BCHESS_DESKTOP.isElectron);
       if (isElectron) {
         if (modalState.downloaded && typeof window.BCHESS_DESKTOP.quitAndInstall === 'function') {
           window.BCHESS_DESKTOP.quitAndInstall();
-        } else if (typeof window.BCHESS_DESKTOP.downloadUpdate === 'function') {
+          return;
+        }
+        if (typeof window.BCHESS_DESKTOP.downloadUpdate === 'function') {
+          openModal({ version: modalState.version || CURRENT_VERSION, notes: 'Descargando actualización v' + (modalState.version || CURRENT_VERSION) + '…', downloading: true, progress: 0 });
           window.BCHESS_DESKTOP.downloadUpdate();
+          return;
         }
       } else {
         applyUpdateNow();
@@ -146,18 +174,23 @@ window.BCHESS_UPDATE = (function () {
     if (!desk || !desk.isElectron) return false;
 
     desk.onUpdateAvailable && desk.onUpdateAvailable(function (info) {
-      openModal({ version: info && info.version, notes: '' });
+      var ver = (info && info.version) || CURRENT_VERSION;
+      // Iniciar la descarga automáticamente; el modal muestra el progreso
+      openModal({ version: ver, notes: 'Descargando actualización v' + ver + '…', downloading: true, progress: 0 });
+      if (typeof desk.downloadUpdate === 'function') desk.downloadUpdate();
     });
     desk.onUpdateDownloaded && desk.onUpdateDownloaded(function (info) {
-      openModal({ version: info && info.version, downloaded: true });
+      openModal({ version: (info && info.version) || CURRENT_VERSION, downloaded: true, notes: 'Descarga completada. Reinicia para aplicar la actualización.' });
+    });
+    desk.onUpdateProgress && desk.onUpdateProgress(function (p) {
+      if (p && typeof p.percent === 'number') setProgress(p.percent);
     });
     desk.onUpdateError && desk.onUpdateError(function (err) {
-      var t = document.getElementById('toast');
-      if (t) {
-        t.textContent = 'No se pudo comprobar la actualización';
-        t.classList.add('show');
-        setTimeout(function () { t.classList.remove('show'); }, 3000);
-      }
+      // No cerrar el modal: mostrar el motivo y dejar que el usuario puede reintentar
+      var message = (err && err.message) ? err.message : String(err || 'error desconocido');
+      setError(message);
+      var modal = document.getElementById('update-modal');
+      if (modal) modal.classList.add('show');
     });
     return true;
   }

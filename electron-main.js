@@ -116,6 +116,12 @@ function setupAutoUpdater() {
     }
   });
 
+  autoUpdater.on('download-progress', function (p) {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      try { mainWindow.webContents.send('update-progress', { percent: p.percent, transferred: p.transferred, total: p.total, bytesPerSecond: p.bytesPerSecond }); } catch (e) {}
+    }
+  });
+
   autoUpdater.on('error', function (err) {
     console.error('[updater] error:', err == null ? 'unknown' : (err.stack || err.message || err));
     if (mainWindow && !mainWindow.isDestroyed()) {

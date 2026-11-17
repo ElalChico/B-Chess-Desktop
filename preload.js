@@ -67,6 +67,11 @@ contextBridge.exposeInMainWorld('BCHESS_LAN', {
     ipcRenderer.on('update-error', handler);
     return function () { ipcRenderer.removeListener('update-error', handler); };
   },
+  onUpdateProgress: function (callback) {
+    var handler = function (_e, p) { callback(p); };
+    ipcRenderer.on('update-progress', handler);
+    return function () { ipcRenderer.removeListener('update-progress', handler); };
+  },
   downloadUpdate: function () {
     return ipcRenderer.invoke('update-download');
   },
