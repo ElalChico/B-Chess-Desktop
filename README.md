@@ -6,6 +6,10 @@
 
 ## Descarga
 
+### ⬇️ Descarga directa (siempre la última versión)
+
+<a href="https://github.com/ElalChico/B-Chess-Desktop/releases/latest/download/B-Chess-Desktop-Setup.exe"><img src="https://img.shields.io/badge/DESCARGAR%20AHORA-B--Chess--Desktop--Setup.exe-2ea043?style=for-the-badge&logo=windows&logoColor=white&labelColor=106e2a" alt="Descargar ahora" /></a>
+
 [![Descargar B-Chess Desktop](https://img.shields.io/badge/Descargar-B--Chess--Desktop--Setup.exe-2ea043?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/ElalChico/B-Chess-Desktop/releases/latest/download/B-Chess-Desktop-Setup.exe)
 
 **Descarga directa →** [**B-Chess-Desktop-Setup.exe**](https://github.com/ElalChico/B-Chess-Desktop/releases/latest/download/B-Chess-Desktop-Setup.exe) (siempre apunta a la última versión)

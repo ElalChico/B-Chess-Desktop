@@ -187,8 +187,23 @@
     var isFull = document.body.classList.toggle('fullscreen');
     // Ajustar tablero
     if (S.hasBoard) renderBoard();
+    syncGameLayout();
     showToast(isFull ? 'Pantalla completa activada' : 'Pantalla completa desactivada');
   }
+
+  // Sincroniza el ancho de las barras de reloj con el ancho real del tablero
+  // (para que queden exactamente pegadas como en chess.com).
+  function syncGameLayout() {
+    var board = S.hasBoard ? $('#board') : null;
+    var bw = board ? board.getBoundingClientRect().width : 0;
+    if (!bw) return;
+    var us = document.getElementById('card-us');
+    var them = document.getElementById('card-them');
+    [us, them].forEach(function (el) { if (el) el.style.width = bw + 'px'; });
+    var panel = document.getElementById('game-panel');
+    if (panel && !document.querySelector('.game-wrap.panel-collapsed')) panel.style.height = '';
+  }
+  window.addEventListener('resize', function () { syncGameLayout(); });
 
   // ================= Barra lateral =================
   var RAIL_KEY = 'bchess-v2-rail';
@@ -451,14 +466,16 @@
     var moves = S.game.moves({ square: fromAlg, verbose: true });
     var move = null;
     for (var i = 0; i < moves.length; i++) if (moves[i].to === toAlg) { move = moves[i]; break; }
-    if (!move) return;
+    // Si el premove o la jugada cae es ilegal: descarta toda la cadena
+    if (!move) { S.premoveQueue = []; return false; }
 
     if (move.promotion) {
       S.pendingPromotion = { from: from, to: to };
       showPromotionModal(move.color);
-      return;
+      return true;
     }
     executeMove(from, to, null);
+    return true;
   }
 
   function executeMove(from, to, promotion) {
@@ -466,8 +483,9 @@
     var beforeWhite = S.clocks.w;
     var beforeBlack = S.clocks.b;
     var result = S.game.move({ from: fromAlg, to: toAlg, promotion: promotion || undefined });
-    if (!result) return;
+    if (!result) { S.premoveQueue = []; return false; }
     afterMove(result, false, beforeWhite, beforeBlack);
+    return true;
   }
 
   function afterMove(result, fromRemote, beforeWhite, beforeBlack) {
@@ -523,16 +541,16 @@
 
     // Ejecutar cola de premoves si existe y ahora es nuestro turno
     if (S.premoveQueue.length > 0 && isLocalTurn() && !S.gameOver) {
-      var nextPremove = S.premoveQueue.shift();
       // Pequeño delay para que se vea fluido
       setTimeout(function() {
-        if (!S.gameOver && isLocalTurn()) {
-          makeMove(nextPremove.from, nextPremove.to);
-        } else {
-          // Si ya no es nuestro turno o terminó la partida, reinsertar al frente
-          S.premoveQueue.unshift(nextPremove);
+        if (S.gameOver || !isLocalTurn()) return;
+        var pm = S.premoveQueue.shift();
+        if (pm) {
+          // Si fue ilegal/ni se pudo hacer, la cadena queda descartada (ya se limpia en executeMove/makeMove)
+          if (pm.promotion) executeMove(pm.from, pm.to, pm.promotion);
+          else makeMove(pm.from, pm.to);
         }
-      }, 30);
+      }, 35);
     }
     
     // IA
@@ -2292,7 +2310,24 @@
       var isCollapsed = !!(gameWrap && gameWrap.classList.contains('panel-collapsed'));
       setPanelCollapsed(!isCollapsed);
     });
-    if (expandBtn) expandBtn.addEventListener('click', function () { setPanelCollapsed(false); });
+    if (expandBtn) {
+      // La barrita se abre con arrastre hacia la izquierda (>40px) o con un simple toque
+      var dragStartX = null, dragOpened = false;
+      expandBtn.addEventListener('pointerdown', function (e) {
+        dragStartX = e.clientX; dragOpened = false;
+        try { expandBtn.setPointerCapture(e.pointerId); } catch (e2) {}
+        e.preventDefault();
+      });
+      expandBtn.addEventListener('pointermove', function (e) {
+        if (dragStartX === null || dragOpened) return;
+        if (dragStartX - e.clientX > 40) { dragOpened = true; setPanelCollapsed(false); }
+      });
+      expandBtn.addEventListener('pointerup', function () {
+        if (dragStartX !== null && !dragOpened) setPanelCollapsed(false); // toque simple = abrir
+        dragStartX = null; dragOpened = false;
+      });
+      expandBtn.addEventListener('pointercancel', function () { dragStartX = null; dragOpened = false; });
+    }
     try { if (localStorage.getItem('bchess-panel-collapsed') === '1') setPanelCollapsed(true); } catch (e) {}
 
     // Ocultar botón pantalla completa cuando no hay partida activa
@@ -3127,6 +3162,32 @@
     return null;
   }
 
+  function computeVisualPieces(vg) {
+    const m = {};
+    const files = 'abcdefgh';
+    const rawBoard = (typeof vg.board === 'function') ? vg.board() : [];
+    // rawBoard[0] = rank 8 (negras arriba), rawBoard[7] = rank 1. files a..h → columnas 0..7
+    for (let r = 0; r < 8; r++) {
+      const row = rawBoard[r] || [];
+      for (let c = 0; c < 8; c++) {
+        const cell = row[c];
+        if (cell) {
+          const alg = files[c] + (8 - r);
+          m[alg] = { type: cell.type, color: cell.color, ghost: false };
+        }
+      }
+    }
+    // Aplicar la cola de premoves en orden (signo de jugadas ya hechas sino conocidas)
+    for (const pm of S.premoveQueue) {
+      const p = m[pm.from];
+      if (!p) continue;
+      delete m[pm.from];
+      const type = pm.promotion ? pm.promotion : p.type;
+      m[pm.to] = { type: type, color: p.color, ghost: true };
+    }
+    return m;
+  }
+
   function renderBoard() {
     var board = $('#board');
     if (!board) return;
@@ -3138,20 +3199,20 @@
     var vg = viewGame();
     var atLive = isFullHistoryInView();
     var fenKey = S.fens[S.viewPly] || 'empty:' + S.viewPly;
+    var visualPieces = computeVisualPieces(vg);
+    var pmSig = S.premoveQueue.map(pm => pm.from + '>' + (pm.to === null ? '_' : pm.to)).join('|') || 'none';
+    var visualKey = fenKey + '::' + pmSig;
     var lastMove = moveAtPly(S.viewPly);
     var lastSig = (S.settings.showLastMove !== false && lastMove) ? (lastMove.from + '>' + lastMove.to) : 'none';
     var legalOn = S.settings.showLegalMoves !== false;
     var legalSig = legalOn && atLive ? (S.legalTargets.join(',') + '@' + S.selected) : 'off';
     var checkSq = S.settings.showCheck !== false ? detectKingCheck(vg) : null;
-    var nextPm = S.premoveQueue[0];
-    var premoveSig = nextPm
-      ? (nextPm.from + '>' + (nextPm.to === null ? '_' : nextPm.to))
-      : 'none';
+    var premoveSig = visualKey;
     var pieceSet = S.settings.pieceSet;
 
-    var piecesChanged = renderCache.fenKey !== fenKey || renderCache.pieceSet !== pieceSet;
+    var piecesChanged = renderCache.fenKey !== fenKey || renderCache.pieceSet !== pieceSet || renderCache.premoveSig !== premoveSig;
     var clsChanged = piecesChanged || renderCache.legalSig !== legalSig || renderCache.lastSig !== lastSig ||
-      renderCache.checkSq !== checkSq || renderCache.premoveSig !== premoveSig || renderCache.atLive !== atLive;
+      renderCache.checkSq !== checkSq || renderCache.atLive !== atLive;
     if (!clsChanged) { updatePlaybackUI(); return; } // nada que pintar
 
     var showLast = S.settings.showLastMove !== false && lastMove;
@@ -3161,14 +3222,15 @@
 
       // Piezas: solo tocar la <img> si cambió el set o el contenido
       if (piecesChanged) {
-        var p = vg.get(alg);
-        var sig = p ? pieceSet + ':' + p.color + p.type : '';
+        var p = visualPieces[alg];
+        var sig = p ? pieceSet + ':' + p.color + p.type + (p.ghost ? ':g' : '') : '';
         if (rec.pieceSig !== sig) {
           rec.pieceSig = sig;
           if (p) {
             var url = pieceUrl(p.color, p.type);
             if (rec.img.getAttribute('src') !== url) rec.img.src = url;
             rec.img.style.display = '';
+            rec.img.style.opacity = p.ghost ? '0.5' : '';
           } else {
             rec.img.style.display = 'none';
           }
@@ -3193,6 +3255,7 @@
     renderCache.premoveSig = premoveSig;
     renderCache.atLive = atLive;
     updatePlaybackUI();
+    syncGameLayout();
   }
 
   function legalTargetsFrom(sq) {
@@ -3247,13 +3310,15 @@
 
     var isOwn = piece && piece.color === S.localColor;
 
-    // Auto-promoción (peón a última fila → reina)
+    // Auto-promoción (peón a última fila → reina); válido también en turno rival
     function detectPromo(fromSq, toSq, fallback) {
       try {
         var fromAlg = sqToAlgebraic(fromSq), toAlg = sqToAlgebraic(toSq);
-        var temp = new Chess(S.game.fen());
-        var mv = temp.move({ from: fromAlg, to: toAlg });
-        if (mv && mv.promotion) return mv.promotion;
+        var p = S.game.get(fromAlg);
+        if (p && p.type === 'p') {
+          var rank = toAlg.charAt(1);
+          if ((p.color === 'w' && rank === '8') || (p.color === 'b' && rank === '1')) return 'q';
+        }
       } catch (e) {}
       return fallback || null;
     }
