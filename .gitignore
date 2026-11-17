@@ -14,3 +14,6 @@ out/
 Thumbs.db
 desktop.ini
 *.log
+
+# Carpeta de instaladores finales (binarios, no se suben al repo)
+INSTALADOR/
