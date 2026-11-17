@@ -474,13 +474,6 @@ body {
 .theme-btn .swatch { width: 44px; height: 28px; border-radius: 4px; border: 1px solid #000; }
 
 /* ===== Game ===== */
-#screen-game.active {
-  max-width: 100%;
-  overflow: hidden;
-  margin: 0 auto;
-  padding: 6px 14px 10px;
-  height: 100%;
-}
 .game-wrap {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
@@ -499,14 +492,15 @@ body {
   min-width: 0;
   align-self: stretch;
   height: 100%;
-  /* ancho anclado al tablero para que los relojes queden pegados a él */
-  width: min(100%, calc(100dvh - 178px));
+  width: 100%;
   margin: 0 auto;
 }
 .game-wrap.panel-collapsed { grid-template-columns: minmax(0, 1fr) !important; }
-.game-wrap.panel-collapsed .game-main { width: min(100%, calc(100dvh - 178px)); }
+
+.game-wrap.panel-collapsed { grid-template-columns: minmax(0, 1fr) !important; }
 
 .board-column {
+  container-type: size;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -516,10 +510,23 @@ body {
   min-height: 0;
 }
 
+.board-frame {
+  position: relative;
+  width: min(100cqw, 100cqh);
+  height: min(100cqw, 100cqh);
+  max-width: 100%;
+  max-height: 100%;
+  background: #050505; border: 1px solid var(--line-2); border-radius: 6px; padding: 5px;
+}
+#screen-game.active { margin: 0 auto; padding: 4px 8px 6px; height: 100%; max-width: 100%; overflow: hidden; }
+@media (max-width: 560px) {
+  #screen-game.active { padding: 4px 6px 6px; height: 100%; }
+  .game-main { width: min(100%, calc(100dvh - 128px)); gap: 4px; }
+}
+
 .player-bar {
   display: flex; flex-direction: row; align-items: center; gap: 12px;
-  width: 100%;
-  background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px;
+  width: 100%; flex: 0 0 auto; min-height: 54px; user-select: none; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px;
   padding: 8px 12px; cursor: pointer; color: var(--text); font-family: var(--font-body);
   text-align: left; transition: border-color .15s, background-color .15s;
 }
@@ -545,14 +552,6 @@ body {
 .clock.warn.lowtime { animation: blink-low 1s infinite; }
 .clock.critical.lowtime { animation: blink-low 0.5s infinite; }
 
-.board-frame {
-  position: relative;
-  height: 100%;
-  max-width: 100%;
-  aspect-ratio: 1 / 1;
-  max-height: 100%;
-  background: #050505; border: 1px solid var(--line-2); border-radius: 6px; padding: 5px;
-}
 .board {
   width: 100%; height: 100%; display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
   border: 1px solid #000; border-radius: 4px; overflow: hidden; position: relative; touch-action: none;
@@ -1281,6 +1280,7 @@ body.dev-mode [data-dev]:hover { outline: 2px dashed var(--accent); outline-offs
 /* ===== Fullscreen mode: hide top-bar ===== */
 /* Ocultar barra superior durante la partida */
 body:has(#screen-game.active) #top-bar { display: none; }
+body.fullscreen .side-rail { display: none !important; }
 
 body.fullscreen #top-bar { display: none; }
 body.fullscreen #screens { padding: 0; }
@@ -1370,9 +1370,14 @@ body.fullscreen .game-panel { max-height: calc(100dvh - 20px); }
 .end-modal #end-title.draw { color: #f0dfa4 !important; }
 
 .end-options { gap: 12px !important; }
-.end-option { border-radius: 14px !important; padding: 15px 18px !important; background: #181a1f !important; border: 1px solid var(--line-2) !important; transition: transform .18s, background-color .15s, border-color .2s !important; }
-.end-option:hover { transform: translateY(-1px) !important; border-color: var(--ok) !important; background: #1e2127 !important; }
-.end-option-highlight { background: #211d10 !important; }
+.end-option { border-radius: 14px !important; padding: 15px 18px !important; background: #181a1f !important; border: 1px solid var(--line-2) !important; transition: none !important; }
+/* "Repetir partida" y "Nuevo color": protagonistas neutros sin color/neón */
+#btn-same-game, #btn-random-game { background: #1f222a !important; border-color: #3a3d46 !important; }
+#btn-same-game:hover, #btn-random-game:hover { background: #262932 !important; border-color: #4c515e !important; transform: none !important; }
+#btn-same-game .end-option-title, #btn-random-game .end-option-title { color: #f2f3f7 !important; }
+.end-option:hover { transform: none !important; border-color: #3a3d46 !important; background: #1e2127 !important; }
+.end-option-highlight { background: #1a1c22 !important; border-color: var(--line-2) !important; }
+.end-option-highlight .end-option-title { color: var(--text) !important; }
 .btn-end-close { border-radius: 12px !important; padding: 10px 26px !important; }
 
 /* ===== Perfil: rediseño futurista serio (sin brillo/neón) ===== */

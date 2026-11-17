@@ -862,7 +862,9 @@
     updateStatusLine();
     var fen = S.game.fen();
     BCHESS_ENGINE.findBestMove(fen, {
-      difficulty: S.settings.difficulty
+      difficulty: S.settings.difficulty,
+      timeOn: S.timeMs > 0,
+      turnMs: S.clocks[S.game.turn()]
     }).then(function (move) {
       var apply = function () {
         S.aiMoveTimer = null;

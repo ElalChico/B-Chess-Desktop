@@ -1,18 +1,10 @@
 /*
  * B-Chess Desktop · Motor único (Stockfish + escalonado Elo)
- * Un solo worker. La dificultad 1–10 mapea aproximadamente a elo 400 → 3190.
- * En los niveles más bajos se introducen errores aleatorios para emular fuerza humana novata.
+ * Un worker por jugada: nunca hay estado corrupto entre búsquedas,
+ * y el motor se desentiende del reloj con tiempo por jugada escalado por el reloj real.
+ * Bajo la IA: niveles con Elo aproximado y blunders aleatorios para simular fuerza humana novata.
  */
 window.BCHESS_ENGINE = (function () {
-  let worker = null;
-  let initPromise = null;
-  let initResolve = null;
-  let pending = null;
-
-  // Escalera de dificultad aproximada por Elo.
-  // Debajo del mínimo de UCI_Elo (1350) se desactiva LimitStrength y se usa
-  // Skill Level bajo + más jugadas aleatorias: el motor falla de verdad
-  // y cada nivel juega distinto (400 ≠ 800 ≠ 1200).
   const LADDER = [
     { elo: 400,  label: 'Iniciación ≈400',    blunder: 0.78, eloOpt: null,  skill: 0,  depth: 6,  limit: false },
     { elo: 800,  label: 'Principiante ≈800',  blunder: 0.55, eloOpt: null,  skill: 2,  depth: 7,  limit: false },
@@ -33,40 +25,6 @@ window.BCHESS_ENGINE = (function () {
   })();
   function log(...args) { if (DEBUG) try { console.log('[engine]', ...args); } catch (e) {} }
 
-  function init() {
-    if (initPromise) return initPromise;
-    initPromise = new Promise(function (resolve) {
-      initResolve = resolve;
-      // Timeout: si el worker no responde en 5s, continúa con move aleatorio en vez de colgarse
-      const initTimeout = setTimeout(function () {
-        log('init timeout — engine no respondió');
-        initResolve();
-      }, 5000);
-      try {
-        log('creating worker');
-        worker = new Worker('js/vendor/stockfish-19-lite-single.js');
-        worker.onmessage = function (e) { handleLine(e); };
-        worker.onerror = function (e) { console.error('[engine] worker error', e); };
-        worker.postMessage('uci');
-      } catch (e) {
-        console.error('[engine] no se pudo iniciar Stockfish', e);
-        clearTimeout(initTimeout);
-        initResolve();
-      }
-    });
-    return initPromise;
-  }
-
-  function handleLine(e) {
-    const line = String((e && e.data) || '');
-    if (line === 'uciok') { worker.postMessage('isready'); return; }
-    if (line === 'readyok') { log('readyok'); initResolve(); return; }
-    if (line.indexOf('bestmove') === 0) {
-      const move = line.split(/\s+/)[1] || '';
-      if (pending) { const cb = pending; pending = null; cb(move); }
-    }
-  }
-
   function randomLegalMove(fen) {
     try {
       if (typeof window.Chess !== 'function') return null;
@@ -78,51 +36,88 @@ window.BCHESS_ENGINE = (function () {
     } catch (e) { return null; }
   }
 
-  async function findBestMove(fen, opts) {
+  function difficultyClamped(opts) {
+    return Math.max(1, Math.min(10, parseInt(opts && opts.difficulty, 10) || 5));
+  }
+
+  // Calcula ms de búsqueda según dificultad y el reloj de quien juega
+  function thinkTimeMs(difficulty, opts) {
+    var base = 400 + difficulty * 200;
+    if (opts && opts.timeOn && isFinite(opts.turnMs)) {
+      var rem = Math.max(0, opts.turnMs);
+      if (rem < 3000) return Math.max(150, Math.floor(rem * 0.08));
+      return Math.max(200, Math.min(base, Math.floor(rem / 22)));
+    }
+    return base;
+  }
+
+  function findBestMove(fen, opts) {
     opts = opts || {};
-    const difficulty = Math.max(1, Math.min(10, parseInt(opts.difficulty, 10) || 5));
+    const difficulty = difficultyClamped(opts);
     const level = LADDER[difficulty - 1];
 
     // Niveles novatos: a veces juega jugadas aleatorias (errores humanos)
     if (level.blunder > 0 && Math.random() < level.blunder) {
       const r = randomLegalMove(fen);
-      if (r) { log('random move', r); return r; }
+      if (r) { log('random move', r); return Promise.resolve(r); }
     }
 
-    await init();
-    if (!worker) return null;
-
-    worker.postMessage('setoption name Threads value 1');
-    worker.postMessage('setoption name Hash value 128');
-    worker.postMessage('setoption name MultiPV value 1');
-    worker.postMessage('setoption name UCI_LimitStrength value ' + (level.limit ? 'true' : 'false'));
-    if (level.limit && level.eloOpt) worker.postMessage('setoption name UCI_Elo value ' + level.eloOpt);
-    worker.postMessage('setoption name Skill Level value ' + level.skill);
-    worker.postMessage('position fen ' + fen);
-    worker.postMessage('go depth ' + level.depth + ' movetime ' + (400 + difficulty * 200));
+    const thinkMs = thinkTimeMs(difficulty, opts);
+    log('findBestMove', { difficulty, elo: level.elo, thinkMs });
 
     return new Promise(function (resolve) {
-      pending = resolve;
-      // Timeout de seguridad: nunca bloquear la partida
-      setTimeout(function () {
-        if (!pending) return;
-        pending = null;
-        try { worker && worker.postMessage('stop'); } catch (e) {}
-        resolve(null);
-      }, 12000);
+      let w = null;
+      let settled = false;
+      const finish = function (val) { if (settled) return; settled = true; clearTimeout(timer); try { w && w.terminate(); } catch (e) {} resolve(val); };
+
+      try {
+        w = new Worker('js/vendor/stockfish-19-lite-single.js');
+      } catch (e) {
+        console.error('[engine] no se pudo crear worker', e);
+        return resolve(null);
+      }
+
+      const timer = setTimeout(function () { finish(null); }, 10000);
+
+      w.onmessage = function (e) {
+        const line = String(e.data || '');
+        if (line === 'uciok') { w.postMessage('isready'); return; }
+        if (line === 'readyok') {
+          try {
+            w.postMessage('setoption name Threads value 1');
+            w.postMessage('setoption name Hash value 64');
+            w.postMessage('setoption name MultiPV value 1');
+            w.postMessage('setoption name UCI_LimitStrength value ' + (level.limit ? 'true' : 'false'));
+            if (level.limit && level.eloOpt) w.postMessage('setoption name UCI_Elo value ' + level.eloOpt);
+            w.postMessage('setoption name Skill Level value ' + level.skill);
+            w.postMessage('position fen ' + fen);
+            // con reloj bajo: sólo movetime para que el motor no piense más de lo que hay en el reloj
+            if (opts.timeOn && isFinite(opts.turnMs) && opts.turnMs < 3000) {
+              w.postMessage('go movetime ' + thinkMs);
+            } else {
+              w.postMessage('go depth ' + level.depth + ' movetime ' + thinkMs);
+            }
+          } catch (err) {
+            finish(null);
+          }
+          return;
+        }
+        if (line.indexOf('bestmove') === 0) {
+          const move = line.split(/\s+/)[1] || '';
+          if (move) finish(move);
+          else finish(null);
+        }
+      };
+
+      w.onerror = function () { finish(null); };
+      w.postMessage('uci');
     });
   }
 
-  function stop() {
-    try { if (worker) worker.postMessage('stop'); } catch (e) {}
-  }
-
-  function quit() {
-    try { if (worker) { worker.postMessage('quit'); worker.terminate && worker.terminate(); } } catch (e) {}
-    worker = null; initPromise = null; initResolve = null; pending = null;
-  }
+  function stop() {}
+  function quit() {}
 
   function ladder() { return LADDER.slice(); }
 
-  return { init: init, findBestMove: findBestMove, stop: stop, quit: quit, ladder: ladder };
+  return { findBestMove: findBestMove, stop: stop, quit: quit, ladder: ladder };
 })();

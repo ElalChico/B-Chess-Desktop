@@ -7,7 +7,7 @@
 window.BCHESS_UPDATE = (function () {
   'use strict';
 
-  var CURRENT_VERSION = '2.2.13';
+  var CURRENT_VERSION = '2.2.14';
   var REPO = 'ElalChico/B-Chess-Desktop';
   var CHECK_URL = 'https://api.github.com/repos/' + REPO + '/releases/latest';
 
