@@ -100,7 +100,7 @@
     transport: 'p2p',
     settings: {
       name: 'Jugador', pieceSet: 'cburnett', boardTheme: 'lichess',
-      sound: true, volume: 80, engine: 'stockfish', difficulty: 5, soundPack: 'gm', aiSpeed: 'normal', aiWinStreak: 0,
+      sound: true, volume: 80, engine: 'stockfish', difficulty: 5, soundPack: 'gm', aiSpeed: 'fast', aiWinStreak: 0,
       colorAI: 'r', clockAI: '300+0', colorOnline: 'r', clockOnline: '300+0',
       settingsVersion: 2, homeProfileSummary: true, historyCollapsed: false,
       premove: true,
