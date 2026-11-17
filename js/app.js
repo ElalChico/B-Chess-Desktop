@@ -140,8 +140,8 @@
     playbackSpeed: 1,
     moveTimes: [], // [{ply, whiteMs, blackMs}] para PGN con tiempos
     reviewingGame: false,
-    // Premove
-    premove: null, // {from, to, promotion}
+    // Premove - ahora es una COLA (array) para múltiples premoves como chess.com
+    premoveQueue: [], // [{from, to, promotion}]
     // Conteo regresivo antes de empezar (como el APK)
     countdownTick: null,     // 3, 2, 1 o null
     countdownTimer: null,
@@ -521,16 +521,18 @@
       sendMoveMessage(result);
     }
 
-    // Ejecutar premove si existe y ahora es nuestro turno
-    if (S.premove && S.premove.from !== null && S.premove.to !== null && isLocalTurn() && !S.gameOver) {
-      var premove = S.premove;
-      S.premove = null;
+    // Ejecutar cola de premoves si existe y ahora es nuestro turno
+    if (S.premoveQueue.length > 0 && isLocalTurn() && !S.gameOver) {
+      var nextPremove = S.premoveQueue.shift();
       // Pequeño delay para que se vea fluido
       setTimeout(function() {
         if (!S.gameOver && isLocalTurn()) {
-          makeMove(premove.from, premove.to);
+          makeMove(nextPremove.from, nextPremove.to);
+        } else {
+          // Si ya no es nuestro turno o terminó la partida, reinsertar al frente
+          S.premoveQueue.unshift(nextPremove);
         }
-      }, 50);
+      }, 30);
     }
     
     // IA
@@ -1065,7 +1067,7 @@
     S.localColor = localColor;
     S.orientation = localColor;
     S.selected = null; S.legalTargets = []; S.gameOver = false; S.lastMove = null;
-    S.premove = null;
+    S.premoveQueue = [];
     S.lowtime = { w: false, b: false }; S.countdown = { w: 0, b: 0 };
     S.countdownTick = null;
     if (S.countdownTimer) { clearInterval(S.countdownTimer); S.countdownTimer = null; }
@@ -2117,7 +2119,7 @@
     S.onlineConnected = false;
     S.hasBoard = true;
     S.selected = null; S.legalTargets = []; S.lastMove = null;
-    S.premove = null;
+    S.premoveQueue = [];
     S.timeMs = record.initialTimeMs || 0;
     S.incrementMs = record.incrementMs || 0;
     S.clocks = { w: S.timeMs, b: S.timeMs };
@@ -3141,8 +3143,9 @@
     var legalOn = S.settings.showLegalMoves !== false;
     var legalSig = legalOn && atLive ? (S.legalTargets.join(',') + '@' + S.selected) : 'off';
     var checkSq = S.settings.showCheck !== false ? detectKingCheck(vg) : null;
-    var premoveSig = S.premove && S.premove.from !== null
-      ? (S.premove.from + '>' + (S.premove.to === null ? '_' : S.premove.to))
+    var nextPm = S.premoveQueue[0];
+    var premoveSig = nextPm
+      ? (nextPm.from + '>' + (nextPm.to === null ? '_' : nextPm.to))
       : 'none';
     var pieceSet = S.settings.pieceSet;
 
@@ -3179,8 +3182,7 @@
       setCellFlag(rec, 'legal', isLegal);
       setCellFlag(rec, 'capture', !!(isLegal && vg.get(alg)));
       setCellFlag(rec, 'check', checkSq === sq);
-      setCellFlag(rec, 'premove', !!(S.premove && S.premove.from === sq));
-      setCellFlag(rec, 'premove-target', !!(S.premove && S.premove.to === sq && S.premove.to !== null));
+      // premove visual removido a petición del usuario (sin marcas amarillas/azules)
     }
 
     renderCache.fenKey = fenKey;
@@ -3208,9 +3210,9 @@
   function clearSelection() {
     S.selected = null;
     S.legalTargets = [];
-    // Solo limpiar premove si es nuestro turno (para no cancelar premove del oponente)
+    // Solo limpiar cola premove si es nuestro turno (para no cancelar premove del oponente)
     if (isLocalTurn()) {
-      S.premove = null;
+      S.premoveQueue = [];
     }
     renderBoard();
   }
@@ -3256,39 +3258,45 @@
       return fallback || null;
     }
 
-    // Hay un premove en composición (origen fijado)
-    if (S.premove && S.premove.from !== null) {
+    // Buscar el premove en construcción (último de la cola con to === null)
+    var buildingIdx = -1;
+    for (var i = S.premoveQueue.length - 1; i >= 0; i--) {
+      if (S.premoveQueue[i].to === null) { buildingIdx = i; break; }
+    }
+
+    // Hay un premove en construcción (origen fijado, destino pendiente)
+    if (buildingIdx !== -1) {
+      var building = S.premoveQueue[buildingIdx];
       // Clic en una pieza propia distinta → re-seleccionar origen + iniciar arrastre
-      if (isOwn && sq !== S.premove.from) {
-        S.premove = { from: sq, to: null, promotion: null };
+      if (isOwn && sq !== building.from) {
+        building.from = sq;
+        building.promotion = null;
         startDrag(e, sq);
         renderBoard();
         return;
       }
-      // Clic en la misma pieza origen → cancelar premove
-      if (sq === S.premove.from) {
-        S.premove = null;
+      // Clic en la misma pieza origen → cancelar este premove
+      if (sq === building.from) {
+        S.premoveQueue.splice(buildingIdx, 1);
         renderBoard();
         return;
       }
-      // Clic en cualquier otra casilla → fijar/actualizar destino
-      S.premove.to = sq;
-      S.premove.promotion = detectPromo(S.premove.from, sq, S.premove.promotion);
+      // Clic en cualquier otra casilla → fijar/actualizar destino y completar este premove
+      building.to = sq;
+      building.promotion = detectPromo(building.from, sq, building.promotion);
       renderBoard();
       return;
     }
 
-    // Sin premove aún: iniciar premove tocando una pieza propia
+    // Sin premove en construcción: iniciar uno nuevo tocando una pieza propia
     if (isOwn) {
-      S.premove = { from: sq, to: null, promotion: null };
+      S.premoveQueue.push({ from: sq, to: null, promotion: null });
       startDrag(e, sq);
       renderBoard();
       return;
     }
 
-    // Clic en casilla vacía u otra pieza: nada
-    S.premove = null;
-    renderBoard();
+    // Clic en casilla vacía u otra pieza: nada (no limpiamos la cola, solo el en construcción)
   }
 
   // ================= Drag & drop =================
@@ -3301,7 +3309,7 @@
     var p = S.game.get(alg);
     if (!p) return;
     var board = $('#board');
-    // Cachear el rectángulo del tablero una sola vez por arrastre (evita layout por pointerup)
+    // Cachear el rectángulo del tablero una sola vez por arrastre
     drag.boardRect = board.getBoundingClientRect();
     var cell = board.querySelector('.square[data-square="' + sq + '"]');
     var size = cell ? cell.getBoundingClientRect().width : 60;
@@ -3309,34 +3317,37 @@
     ghost.className = 'piece ghost';
     ghost.src = pieceUrl(p.color, p.type);
     ghost.alt = '';
-    ghost.style.width = (size * 0.88) + 'px';
-    ghost.style.height = (size * 0.88) + 'px';
+    ghost.style.width = (size * 0.92) + 'px';
+    ghost.style.height = (size * 0.92) + 'px';
+    // Usar position: fixed + transform para movimiento fluido sin layout
     document.body.appendChild(ghost);
     drag.ghost = ghost;
     if (cell) { cell.classList.add('drag-source'); drag.sourceEl = cell; }
     moveGhost(e.clientX, e.clientY);
-    window.addEventListener('pointermove', onDragMove);
+    window.addEventListener('pointermove', onDragMove, { passive: false });
     window.addEventListener('pointerup', onDragEnd);
+    window.addEventListener('pointercancel', onDragEnd);
+    // Evitar scroll nativo durante arrastre
+    e.preventDefault();
   }
 
   function moveGhost(x, y) {
     if (!drag.ghost) return;
-    // transform evita layout/paint por cada movimiento del puntero
+    // position: fixed + translate3d = GPU acelerado, sin layout/paint
     drag.ghost.style.transform = 'translate3d(' + x + 'px,' + y + 'px,0) translate(-50%,-50%)';
   }
 
   function onDragMove(e) {
     if (!drag.active) return;
-    // coalescar al ritmo de frames para movimientos ultra fluidos
-    if (drag.moveRaf) return;
-    var cx = e.clientX, cy = e.clientY;
-    drag.moveRaf = requestAnimationFrame(function () { drag.moveRaf = null; moveGhost(cx, cy); });
+    // Movimiento directo sin rAF coalescing = 0 latencia percibida
+    moveGhost(e.clientX, e.clientY);
+    e.preventDefault(); // evita scroll/selección
   }
 
   function onDragEnd(e) {
     window.removeEventListener('pointermove', onDragMove);
     window.removeEventListener('pointerup', onDragEnd);
-    if (drag.moveRaf) { cancelAnimationFrame(drag.moveRaf); drag.moveRaf = null; }
+    window.removeEventListener('pointercancel', onDragEnd);
     if (drag.ghost) { drag.ghost.remove(); drag.ghost = null; }
     if (drag.sourceEl) { drag.sourceEl.classList.remove('drag-source'); drag.sourceEl = null; }
     if (!drag.active) return;
@@ -3364,7 +3375,20 @@
           var mv = temp.move({ from: fromAlg, to: toAlg });
           if (mv && mv.promotion) promo = mv.promotion;
         } catch (e2) {}
-        S.premove = { from: drag.from, to: target, promotion: promo };
+        // Si hay un premove en construcción para esta misma pieza, completarlo
+        var buildingIdx = -1;
+        for (var i = S.premoveQueue.length - 1; i >= 0; i--) {
+          if (S.premoveQueue[i].to === null && S.premoveQueue[i].from === drag.from) {
+            buildingIdx = i; break;
+          }
+        }
+        if (buildingIdx !== -1) {
+          S.premoveQueue[buildingIdx].to = target;
+          S.premoveQueue[buildingIdx].promotion = promo;
+        } else {
+          // Añadir nuevo premove completado a la cola
+          S.premoveQueue.push({ from: drag.from, to: target, promotion: promo });
+        }
       }
       renderBoard();
       return;

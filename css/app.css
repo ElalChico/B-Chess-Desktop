@@ -564,11 +564,6 @@ body {
 .square.legal.capture::before {
   width: 90%; height: 90%; background: transparent; border: 5px solid var(--sq-legal); border-radius: 50%;
 }
-/* Premoves: amarillo = origen fijado, azul = destino */
-.square.light.premove, .square.dark.premove { background: rgba(201,162,39,.42); }
-.square.premove { box-shadow: inset 0 0 0 3px #c9a227; }
-.square.light.premove-target, .square.dark.premove-target { background: rgba(143,182,216,.42); }
-.square.premove-target { box-shadow: inset 0 0 0 3px #8fb6d8; }
 .square.drag-source .piece { opacity: .15; }
 .square .coord { position: absolute; font-size: 9px; font-weight: 700; color: var(--coord); pointer-events: none; z-index: 1; }
 .square .coord.rank { left: 3px; top: 2px; }
@@ -582,6 +577,7 @@ body {
   position: fixed; z-index: 9999; pointer-events: none;
   left: 0; top: 0; transform: translate(-50%, -50%); object-fit: contain;
   transition: none; will-change: transform;
+  touch-action: none;
 }
 
 .check-banner {
