@@ -86,6 +86,13 @@ function cleanupUpdaterCaches() {
 function setupAutoUpdater() {
   if (process.platform !== 'win32') return;
 
+  // Forzar el feed de GitHub Releases para que siempre apunte al release correcto
+  autoUpdater.setFeedURL({
+    provider: 'github',
+    owner: 'ElalChico',
+    repo: 'B-Chess-Desktop'
+  });
+
   autoUpdater.autoDownload = true;
   autoUpdater.autoInstallOnAppQuit = true;
 
@@ -93,7 +100,12 @@ function setupAutoUpdater() {
     console.error('[updater] error:', err == null ? 'unknown' : (err.stack || err.message || err));
   });
 
+  autoUpdater.on('checking-for-update', function () {
+    console.log('[updater] buscando actualizaciones...');
+  });
+
   autoUpdater.on('update-available', function (info) {
+    console.log('[updater] actualización disponible:', info.version);
     if (updateNotified) return;
     updateNotified = true;
     if (mainWindow && !mainWindow.isDestroyed()) {
@@ -111,6 +123,10 @@ function setupAutoUpdater() {
         }
       });
     }
+  });
+
+  autoUpdater.on('update-not-available', function (info) {
+    console.log('[updater] estás en la última versión:', info.version);
   });
 
   autoUpdater.on('update-downloaded', function (info) {
@@ -321,7 +337,10 @@ ipcMain.handle('lan-disconnect', async function () {
 // ================= App lifecycle =================
 app.whenReady().then(function () {
   createWindow();
-  setupAutoUpdater();
+  // Configurar auto-updater DESPUÉS de que la ventana esté lista
+  mainWindow.once('ready-to-show', function () {
+    setTimeout(setupAutoUpdater, 3000);
+  });
   // Borra instaladores de versiones anteriores de la caché de actualización
   cleanupUpdaterCaches();
 });

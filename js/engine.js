@@ -37,6 +37,11 @@ window.BCHESS_ENGINE = (function () {
     if (initPromise) return initPromise;
     initPromise = new Promise(function (resolve) {
       initResolve = resolve;
+      // Timeout: si el worker no responde en 5s, continúa con move aleatorio en vez de colgarse
+      const initTimeout = setTimeout(function () {
+        log('init timeout — engine no respondió');
+        initResolve();
+      }, 5000);
       try {
         log('creating worker');
         worker = new Worker('js/vendor/stockfish-19-lite-single.js');
@@ -45,6 +50,7 @@ window.BCHESS_ENGINE = (function () {
         worker.postMessage('uci');
       } catch (e) {
         console.error('[engine] no se pudo iniciar Stockfish', e);
+        clearTimeout(initTimeout);
         initResolve();
       }
     });

@@ -1271,13 +1271,12 @@ body.dev-mode [data-dev]:hover { outline: 2px dashed var(--accent); outline-offs
 body:has(#screen-game.active) #top-bar { display: none; }
 
 body.fullscreen #top-bar { display: none; }
-body.fullscreen .app-body { height: 100%; }
 body.fullscreen #screens { padding: 0; }
-body.fullscreen #screen-game.active { margin: 0 auto; padding: 8px; height: 100%; }
-body.fullscreen .game-wrap { height: 100vh; gap: 8px; }
-body.fullscreen .board-frame { width: min(100%, calc(100vh - 16px)); height: calc(100vh - 16px); max-width: calc(100vh - 16px); }
+body.fullscreen #screen-game.active { margin: 0 auto; padding: 6px; height: 100%; }
+body.fullscreen .game-wrap { height: 100%; gap: 8px; }
+body.fullscreen .board-frame { width: min(100%, calc(100dvh - 140px)); height: calc(100dvh - 140px); max-width: calc(100dvh - 140px); }
 body.fullscreen .game-main { justify-content: center; }
-body.fullscreen .game-panel { max-height: calc(100vh - 16px); }
+body.fullscreen .game-panel { max-height: calc(100dvh - 140px); }
 
 /* ===== Profile edit modal larger ===== */
 .profile-edit { width: min(90vw, 580px); max-width: 580px; }
