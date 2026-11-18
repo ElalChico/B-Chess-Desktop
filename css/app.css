@@ -1566,3 +1566,27 @@ body.full-board .game-actions { display: none !important; }
 .full-board-exit { position: fixed; top: 14px; right: 14px; z-index: 50; width: 44px; height: 44px; border-radius: 10px; background: rgba(16,16,18,.78); border: 1px solid var(--line-2); color: var(--text); display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 22px rgba(0,0,0,.5); backdrop-filter: blur(6px); transition: background-color .15s, border-color .15s; }
 .full-board-exit:hover { background: rgba(28,32,38,.92); border-color: var(--line-2); }
 .full-board-exit svg { width: 18px; height: 18px; }
+/* ===== Bot�n Pantalla completa/Fullscreen toggle ===== */
+.fullscreen-toggle { gap: 8px; padding: 6px 10px 6px 8px; cursor: pointer; color: var(--text); transition: background-color .15s, border-color .15s, box-shadow .15s, color .15s; }
+.fullscreen-toggle .fullscreen-enter, .fullscreen-toggle .fullscreen-exit { width: 16px; height: 16px; flex: 0 0 auto; }
+.fullscreen-toggle .fullscreen-exit { display: none; }
+.fullscreen-toggle[aria-pressed="true"] { background: linear-gradient(180deg, rgba(111,174,143,.22) 0%, rgba(111,174,143,.14) 100%); border-color: rgba(111,174,143,.45); color: #9fe0ba; box-shadow: 0 0 0 2px rgba(111,174,143,.35), 0 0 14px rgba(111,174,143,.35); animation: fullscreen-pulse 1.4s ease-in-out infinite; }
+.fullscreen-toggle[aria-pressed="true"] .fullscreen-enter { display: none; }
+.fullscreen-toggle[aria-pressed="true"] .fullscreen-exit { display: block; }
+@media (prefers-reduced-motion: no-preference) { @keyframes fullscreen-pulse { 0%,100% { box-shadow: 0 0 0 2px rgba(111,174,143,.35), 0 0 14px rgba(111,174,143,.35); } 50% { box-shadow: 0 0 0 2px rgba(111,174,143,.55), 0 0 22px rgba(111,174,143,.55); } } }
+
+
+/* ===== Fullscreen toggle final override: domina body.fullscreen ===== */
+body.fullscreen .fullscreen-toggle { background: linear-gradient(180deg, rgba(111,174,143,.28), rgba(111,174,143,.18)) !important; border-color: rgba(159,224,186,.50) !important; color: #9fe0ba !important; box-shadow: 0 0 0 2px rgba(159,224,186,.45), 0 0 18px rgba(159,224,186,.33) !important; animation: fullscreen-pulse 1.4s ease-in-out infinite; }
+body.fullscreen .fullscreen-toggle .fullscreen-enter { display: none; }
+body.fullscreen .fullscreen-toggle .fullscreen-exit { display: block; }
+@media (prefers-reduced-motion: no-preference) { @keyframes fullscreen-pulse { 0%,100% { box-shadow: 0 0 0 2px rgba(159,224,186,.45), 0 0 18px rgba(159,224,186,.33); filter: brightness(1); } 50% { box-shadow: 0 0 0 3px rgba(159,224,186,.6), 0 0 26px rgba(159,224,186,.45); filter: brightness(1.12); } } }
+
+
+/* ===== Fullscreen toggle final: id domina todo ===== */
+body.fullscreen #btn-fullscreen-game { background: linear-gradient(180deg, rgba(111,174,143,.31), rgba(111,174,143,.20)) !important; border-color: rgba(159,224,186,.55) !important; color: #9fe0ba !important; box-shadow: 0 0 0 2px rgba(159,224,186,.5), 0 0 20px rgba(159,224,186,.4) !important; animation: fullscreen-pulse 1.4s ease-in-out infinite !important; }
+body.fullscreen #btn-fullscreen-game .fullscreen-enter { display: none !important; }
+body.fullscreen #btn-fullscreen-game .fullscreen-exit { display: block !important; }
+
+
+body.fullscreen #btn-fullscreen-game, html body.fullscreen #btn-fullscreen-game { color: #9fe0ba !important; border-color: rgba(159,224,186,.6) !important; }

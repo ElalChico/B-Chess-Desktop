@@ -184,12 +184,45 @@
   }
 
   // ================= Fullscreen =================
+  function syncFullscreenButton() {
+    var btn = document.getElementById('btn-fullscreen-game');
+    if (!btn) return;
+    var active = document.body.classList.contains('fullscreen');
+    btn.classList.toggle('active', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    btn.title = active ? 'Salir de pantalla completa' : 'Pantalla completa';
+    btn.setAttribute('aria-label', btn.title);
+    // Estilos inline para garantizar que se vean aun antes que el CSS cargue
+    if (active) {
+      btn.style.background = 'linear-gradient(180deg, rgba(111,174,143,.35), rgba(111,174,143,.22))';
+      btn.style.borderColor = 'rgba(159,224,186,.65)';
+      btn.style.color = '#9fe0ba';
+      btn.style.boxShadow = '0 0 0 2px rgba(159,224,186,.55), 0 0 22px rgba(159,224,186,.45)';
+      btn.style.animation = 'fullscreen-pulse 1.4s ease-in-out infinite';
+    } else {
+      btn.style.background = '';
+      btn.style.borderColor = '';
+      btn.style.color = '';
+      btn.style.boxShadow = '';
+      btn.style.animation = '';
+    }
+    var label = btn.querySelector('.fullscreen-label');
+    if (label) label.textContent = active ? 'Salir de pantalla' : 'Pantalla completa';
+  }
+
+  // Sincroniza el estado del botón con la clase fullscreen incluso cuando cambia por otra vía (atajo F11, F, click)
+  (function watchFullscreen() {
+    var observer = new MutationObserver(function () { syncFullscreenButton(); });
+    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+  })();
+
   function toggleFullscreen() {
     var isFull = document.body.classList.toggle('fullscreen');
     // Ajustar tablero
     if (isFull) document.body.classList.remove('full-board');
     if (S.hasBoard) renderBoard();
     syncGameLayout();
+    syncFullscreenButton();
     showToast(isFull ? 'Pantalla completa activada' : 'Pantalla completa desactivada');
   }
 
