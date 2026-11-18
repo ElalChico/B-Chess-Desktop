@@ -4,11 +4,11 @@ const { contextBridge, ipcRenderer } = require('electron');
 // En preload (contexto aislado) `require('electron').app` NO existe: `app` solo está
 // disponible en el proceso main. Pedir la versión por IPC sincrónico evita
 // "Cannot read properties of undefined (reading 'getVersion')".
-var appVersion = '2.2.21';
+var appVersion = '2.2.22';
 try {
-  appVersion = ipcRenderer.sendSync('get-version') || '2.2.21';
+  appVersion = ipcRenderer.sendSync('get-version') || '2.2.22';
 } catch (e) {
-  appVersion = '2.2.21';
+  appVersion = '2.2.22';
 }
 
 contextBridge.exposeInMainWorld('BCHESS_DESKTOP', {

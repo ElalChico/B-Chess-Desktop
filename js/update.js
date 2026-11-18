@@ -7,17 +7,16 @@
 window.BCHESS_UPDATE = (function () {
   'use strict';
 
-  var CURRENT_VERSION = '2.2.21';
+  var CURRENT_VERSION = '2.2.22';
   var REPO = 'ElalChico/B-Chess-Desktop';
   var CHECK_URL = 'https://api.github.com/repos/' + REPO + '/releases/latest';
 
-  // Notas de la versión v2.2.21 (editar en cada release)
+  // Notas de la versión v2.2.22 (editar en cada release)
   var RELEASE_NOTES = [
-    { type: 'fix', text: 'FIX CRÍTICO: preload aislado llamaba app.getVersion() sin estar disponible en contexto preload -> la app quedaba sin puente Electron y todas las pantallas quedaban negras (Perfil/Historial/Estadísticas incluidas). Versión ahora via IPC sincrónico get-version.' },
-    { type: 'fix', text: 'Premove encadenado completo con arrastre (caramba de v2.2.20) y Rendimiento ~desktop.' },
-    { type: 'fix', text: 'Pantalla dedicada de actualización (#screen-update): progreso visible, botón REINICIAR AHORA funcional y reintento con un clic.' },
-    { type: 'feat', text: 'Ajustes completo y scrollable.' },
-    { type: 'fix', text: 'Premove ilegal no se fija (mismo criterio que Lichess).' }
+    { type: 'fix', text: 'FIX CRITICO: desbalance de tags HTML en index.html (2 pares de </div> sobrantes tras borrado del modal de actualizacion) rompieron el parsing; Perfil, Historial y Estadisticas quedaron fuera de <main id=screens> y al pulsar sus botones se mostraba pantalla negra.' },
+    { type: 'fix', text: 'FIX CRITICO v2.2.21: preload aislado llamaba app.getVersion() sin estar disponible; bridge Electron moria y todas las pantallas quedaban oscuras.' },
+    { type: 'fix', text: 'Menú Electron cableado correctamente: BCHESS_DESKTOP expuesto via preload con fallback de version via IPC sincrono.' },
+    { type: 'feat', text: 'Premove encadenado completo con arrastre (desde v2.2.20).' }
   ];
 
   var RELEASE_WARNINGS = [
