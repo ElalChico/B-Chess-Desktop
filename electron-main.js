@@ -308,6 +308,12 @@ ipcMain.handle('lan-send', async function (event, target, message) {
   }
 });
 
+// ================= Versión vía IPC sincrónico (preload aislado) =================
+// El preload no puede llamar app.getVersion() directamente; exponemos un handle aquí.
+ipcMain.on('get-version', function (event) {
+  try { event.returnValue = app.getVersion(); } catch (e) { event.returnValue = '2.2.20'; }
+});
+
 // Auto-updater — dispara descarga y reinicio desde el renderer
 ipcMain.handle('update-download', async () => {
   try {

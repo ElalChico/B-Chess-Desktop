@@ -7,18 +7,17 @@
 window.BCHESS_UPDATE = (function () {
   'use strict';
 
-  var CURRENT_VERSION = '2.2.20';
+  var CURRENT_VERSION = '2.2.21';
   var REPO = 'ElalChico/B-Chess-Desktop';
   var CHECK_URL = 'https://api.github.com/repos/' + REPO + '/releases/latest';
 
-  // Notas de la versión v2.2.20 (editar en cada release)
+  // Notas de la versión v2.2.21 (editar en cada release)
   var RELEASE_NOTES = [
-    { type: 'feat', text: 'Premove encadenado con arrastre: la misma pieza puede premover cualquier cantidad de veces seguidas (e7-e5-e4-e3-e2...) — antes con el gesto de arrastrar solo fijaba el primero y la cadena se atascaba.' },
-    { type: 'fix', text: 'premove con gesto de arrastre corregido para premoves sobre piezas ya pre-movidas (capa visual superpuesta con la cola), completando el comportamiento tap y drag igual de bien.' },
-    { type: 'fix', text: 'Pantalla dedicada de actualización (#screen-update) con progreso y reintento funcional' },
-    { type: 'feat', text: 'Ajustes completo y scrollable (todo alcanzable, nada cortado abajo)' },
-    { type: 'fix', text: 'Premove ilegal no se fija (mismo criterio que Lichess): simulación de la cola con un clon del motor.' },
-    { type: 'feat', text: 'Rendimiento de clicks: listeners del Inspector solo con F2 activo; cero backdrop-filter blur; ajuste fino de layout para tableros lentos.' }
+    { type: 'fix', text: 'FIX CRÍTICO: preload aislado llamaba app.getVersion() sin estar disponible en contexto preload -> la app quedaba sin puente Electron y todas las pantallas quedaban negras (Perfil/Historial/Estadísticas incluidas). Versión ahora via IPC sincrónico get-version.' },
+    { type: 'fix', text: 'Premove encadenado completo con arrastre (caramba de v2.2.20) y Rendimiento ~desktop.' },
+    { type: 'fix', text: 'Pantalla dedicada de actualización (#screen-update): progreso visible, botón REINICIAR AHORA funcional y reintento con un clic.' },
+    { type: 'feat', text: 'Ajustes completo y scrollable.' },
+    { type: 'fix', text: 'Premove ilegal no se fija (mismo criterio que Lichess).' }
   ];
 
   var RELEASE_WARNINGS = [
