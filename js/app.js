@@ -3541,8 +3541,10 @@
     drag.active = true;
     drag.from = sq;
     var alg = sqToAlgebraic(sq);
-    var p = S.game.get(alg);
-    if (!p) return;
+    // Mirar primero la posición VISUAL (superpuesta con premoves):
+    // una pieza ya "movida" por un premove no existe en la FEN real, pero sí debe poder seguir arrastrándose.
+    var p = computeVisualPieces(viewGame())[alg] || S.game.get(alg);
+    if (!p) { drag.active = false; drag.from = null; return; }
     var board = $('#board');
     // Cachear el rectángulo del tablero una sola vez por arrastre
     drag.boardRect = board.getBoundingClientRect();

@@ -7,22 +7,18 @@
 window.BCHESS_UPDATE = (function () {
   'use strict';
 
-  var CURRENT_VERSION = '2.2.19';
+  var CURRENT_VERSION = '2.2.20';
   var REPO = 'ElalChico/B-Chess-Desktop';
   var CHECK_URL = 'https://api.github.com/repos/' + REPO + '/releases/latest';
 
-  // Notas de la versión v2.2.19 (editar en cada release)
+  // Notas de la versión v2.2.20 (editar en cada release)
   var RELEASE_NOTES = [
-    { type: 'feat', text: 'Premove estilo Lichess/Chess.com: la pieza es literalmente movida a la casilla destino en cuanto fijas el premove, queda translucida (55%) hasta tu turno. Encadenado ilimitado (e7-e5-e4...) con clics o arrastre.' },
-    { type: 'fix', text: 'Premove ilegal no se fija (mismo criterio que Lichess): se simula la cola completa en un clon del motor invirtiendo el turno; se rechaza cualquier movimiento que deje a tu rey en jaque o que no sea legal en la posicion simulada.' },
-    { type: 'fix', text: 'Pantalla dedicada de actualización (#screen-update): progreso en tiempo real, boton Reiniciar ahora funcional y reintento con un clic. Eliminamos el modal viejo inerte con botones sin wiring.' },
-    { type: 'fix', text: 'Actualizacion automatica robusta y visible: deteccion, descarga automatica e instalacion al cerrar, con detalle del error en pantalla y reintento de un vistazo.' },
-    { type: 'feat', text: 'Ajustes: todo lo que estaba cortado abajo (Barra lateral) ahora es alcanzable: la columna derecha hace scroll y el footer queda pinado dentro de la columna desplazable.' },
-    { type: 'feat', text: 'Motor de IA: escalonado de fuerza mas perceptible para niveles 1-5 (blunders) y Elo opt efectivo en niveles superiores; honestidad sobre el techo del Stockfish lite (~1800-2100 en hardware domestico).' },
-    { type: 'fix', text: 'Premove ya no se suelta antes de tiempo: sin re-render del tablero bajo el puntero durante el gesto, y el ghost se elimina al soltar/cancelar.' },
-    { type: 'fix', text: 'Rendimiento percibido en clicks: listeners del Inspector de debug ya no existen mientras el modo dev este apagado; eliminado MutationObserver body que disparaba en cada clase; eliminados todos los backdrop-filter: blur de pantalla completa.' },
-    { type: 'feat', text: 'Texto con jerarquia semantica: importante en verde suave, advertencias en ambar palido, sugerencias en azul apagado; etiquetas en color; rubrica verde bajo titulos de pantalla.' },
-    { type: 'exp', text: 'Incluye v2.2.18: boton Pantalla completa profesional con glow respiratorio y modo Modo Progresivo respetado.' }
+    { type: 'feat', text: 'Premove encadenado con arrastre: la misma pieza puede premover cualquier cantidad de veces seguidas (e7-e5-e4-e3-e2...) — antes con el gesto de arrastrar solo fijaba el primero y la cadena se atascaba.' },
+    { type: 'fix', text: 'premove con gesto de arrastre corregido para premoves sobre piezas ya pre-movidas (capa visual superpuesta con la cola), completando el comportamiento tap y drag igual de bien.' },
+    { type: 'fix', text: 'Pantalla dedicada de actualización (#screen-update) con progreso y reintento funcional' },
+    { type: 'feat', text: 'Ajustes completo y scrollable (todo alcanzable, nada cortado abajo)' },
+    { type: 'fix', text: 'Premove ilegal no se fija (mismo criterio que Lichess): simulación de la cola con un clon del motor.' },
+    { type: 'feat', text: 'Rendimiento de clicks: listeners del Inspector solo con F2 activo; cero backdrop-filter blur; ajuste fino de layout para tableros lentos.' }
   ];
 
   var RELEASE_WARNINGS = [
