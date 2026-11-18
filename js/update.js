@@ -7,16 +7,17 @@
 window.BCHESS_UPDATE = (function () {
   'use strict';
 
-  var CURRENT_VERSION = '2.2.23';
+  var CURRENT_VERSION = '2.2.24';
   var REPO = 'ElalChico/B-Chess-Desktop';
   var CHECK_URL = 'https://api.github.com/repos/' + REPO + '/releases/latest';
 
-  // Notas de la versión v2.2.23 (editar en cada release)
+  // Notas de la versión v2.2.24 (editar en cada release)
   var RELEASE_NOTES = [
-    { type: 'fix', text: 'Premove falla intermitentemente cuando el FEN ya estaba en turno local (tras mover la IA): flipFenTurn forzaba inadecuadamente el FEN al color opuesto; premoveLegal se rechazaba siempre que la FEN ya era turno local.' },
-    { type: 'fix', text: 'Cadenas de premoves tras turnos de la IA: ahora el FEN clonado siempre se fuerza al color local dentro de premoveLegal.' },
-    { type: 'feat', text: 'Premove encadenado completo con arrastre y Move Full funcional.' },
-    { type: 'feat', text: 'Pantalla dedicada de actualización con progreso y reintento funcional.' }
+    { type: 'feat', text: 'Premove infinito encima de la misma pieza: e7-e5-e4-e3-e2-promos, tantas veces como quieras, incluso en cadena (verificado con chess.js clone simulando cada premove como tu turno).' },
+    { type: 'feat', text: 'Enroque como premove: durante el turno rival, arrastrar el rey a su casilla de enroque (por ejemplo a g1/c1 como blancas, o g8/c8 como negras) encola un premove de enroque que mueve rey y torre.' },
+    { type: 'feat', text: 'Visual de premove: clone de chess.js aplica toda la cola respetándola en orden (soporta castling y promociones reales) y muestra piezas ghost (55% opacidad) en destino.' },
+    { type: 'fix', text: 'Tu cola de premoves se visualiza con exactitud: destino movido ahora translúcido igual que chess.com, y pasa correctamente el tablero completo (incl. enroque).' },
+    { type: 'feat', text: 'Fixes v2.2.23: premoves rechazados injustamente tras turno local (flipFenTurn forzaba el turno equivocado). Ahora premoveLegal siempre clona el FEN con turno local.' }
   ];
 
   var RELEASE_WARNINGS = [

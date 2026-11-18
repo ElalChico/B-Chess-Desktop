@@ -3273,27 +3273,46 @@
   function computeVisualPieces(vg) {
     const m = {};
     const files = 'abcdefgh';
-    const rawBoard = (typeof vg.board === 'function') ? vg.board() : [];
-    // rawBoard[0] = rank 8 (negras arriba), rawBoard[7] = rank 1. files a..h → columnas 0..7
+    // Clonar la posición actual y aplicar los premoves en orden.
+    // NOTA: el clone debe forzar turno LOCAL tras cada move (flipFenTurn) porque
+    // entre tus propios premoves no hay turno del rival: cada premove es "tu" jugada.
+    // Castling y promoción salen solos gracias a clone.move haciendo lo mismo que tu partida.
+    var clone = new Chess();
+    try {
+      if (!clone.load(flipFenTurn(vg && typeof vg.fen === 'function' ? vg.fen() : S.game.fen()))) {
+        return m;
+      }
+    } catch (e) {
+      return m;
+    }
+    var ghostSquares = {};
+    for (var i = 0; i < S.premoveQueue.length; i++) {
+      var pm = S.premoveQueue[i];
+      if (!pm || pm.to === null || pm.to === undefined) continue;
+      var mv = null;
+      try {
+        mv = clone.move({
+          from: sqToAlgebraic(pm.from),
+          to: sqToAlgebraic(pm.to),
+          promotion: pm.promotion || undefined
+        });
+      } catch (e) { mv = null; }
+      if (mv) {
+        ghostSquares[mv.to] = true;
+        // Forzar turno al color local para el siguiente premove (entre tus jugadas no hay turno rival)
+        try { clone.load(flipFenTurn(clone.fen())); } catch (e) { return m; }
+      }
+    }
+    var rawBoard = (typeof clone.board === 'function') ? clone.board() : [];
     for (let r = 0; r < 8; r++) {
       const row = rawBoard[r] || [];
       for (let c = 0; c < 8; c++) {
         const cell = row[c];
         if (cell) {
           const alg = files[c] + (8 - r);
-          m[alg] = { type: cell.type, color: cell.color, ghost: false };
+          m[alg] = { type: cell.type, color: cell.color, ghost: !!ghostSquares[alg] };
         }
       }
-    }
-    // Aplicar la cola de premoves en orden (conversión índice→algebraico; pm.from/to son 0..63)
-    for (const pm of S.premoveQueue) {
-      if (pm.to === null || pm.to === undefined) continue; // aún en construcción
-      const fromAlg = sqToAlgebraic(pm.from), toAlg = sqToAlgebraic(pm.to);
-      const p = m[fromAlg];
-      if (!p) continue; // origen vacío en la posición actual (pieza comida por el rival, etc.)
-      delete m[fromAlg];
-      const type = pm.promotion ? pm.promotion : p.type;
-      m[toAlg] = { type: type, color: p.color, ghost: true };
     }
     return m;
   }
