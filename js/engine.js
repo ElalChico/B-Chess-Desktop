@@ -4,19 +4,24 @@
  * Escalones de Elo aproximados con blunders aleatorios para niveles bajos.
  * El motor se desentiende del reloj con tiempo de búsqueda escalado por el reloj.
  * Siempre responde: si algo fallara, devolver 'null' fuerza un movimiento aleatorio seguro.
+ *
+ * ADVERTENCIA HONESTA: stockfish-19-lite-single (incluido) es la versión lite.
+ * Su fuerza efectiva en nivel alto topa aproximadamente en 1800-2100 en hardware doméstico.
+ * Las etiquetas Maestro/Ultra son aproximadas al tope real del lite;
+ * para alcanzar 3000+ habría que empaquetar Stockfish completo (decenas de MB más).
  */
 window.BCHESS_ENGINE = (function () {
   const LADDER = [
-    { elo: 400,  label: 'Iniciación ≈400',    blunder: 0.78, eloOpt: null,  skill: 0,  depth: 5,  limit: false },
-    { elo: 800,  label: 'Principiante ≈800',  blunder: 0.55, eloOpt: null,  skill: 2,  depth: 6,  limit: false },
-    { elo: 1200, label: 'Aprendiz ≈1200',     blunder: 0.30, eloOpt: null,  skill: 4,  depth: 7,  limit: false },
-    { elo: 1350, label: 'Casual ≈1350',       blunder: 0,    eloOpt: 1320,  skill: 0,  depth: 9,  limit: true },
-    { elo: 1600, label: 'Normal ≈1600',       blunder: 0,    eloOpt: 1600,  skill: 3,  depth: 10, limit: true },
-    { elo: 1800, label: 'Intermedio ≈1800',   blunder: 0,    eloOpt: 1800,  skill: 5,  depth: 12, limit: true },
-    { elo: 2050, label: 'Avanzado ≈2050',     blunder: 0,    eloOpt: 2050,  skill: 8,  depth: 14, limit: true },
-    { elo: 2300, label: 'Competitivo ≈2300',  blunder: 0,    eloOpt: 2300,  skill: 11, depth: 16, limit: true },
-    { elo: 2600, label: 'Maestro ≈2600',      blunder: 0,    eloOpt: 2600,  skill: 15, depth: 18, limit: true },
-    { elo: 3190, label: 'Ultra ≈3190',        blunder: 0,    eloOpt: 3190,  skill: 20, depth: 22, limit: true }
+    { elo: 400,  label: 'Iniciación ≈400',    blunder: 0.85, eloOpt: null,  skill: 0,  depth: 3,  limit: false },
+    { elo: 800,  label: 'Principiante ≈800',  blunder: 0.62, eloOpt: null,  skill: 2,  depth: 4,  limit: false },
+    { elo: 1200, label: 'Aprendiz ≈1200',     blunder: 0.38, eloOpt: null,  skill: 4,  depth: 6,  limit: false },
+    { elo: 1350, label: 'Casual ≈1350',       blunder: 0.15, eloOpt: 1250,  skill: 1,  depth: 8,  limit: true },
+    { elo: 1600, label: 'Normal ≈1600',       blunder: 0.05, eloOpt: 1550,  skill: 3,  depth: 10, limit: true },
+    { elo: 1800, label: 'Intermedio ≈1800',   blunder: 0,    eloOpt: 1800,  skill: 6,  depth: 12, limit: true },
+    { elo: 2050, label: 'Avanzado ≈2050',     blunder: 0,    eloOpt: 2000,  skill: 9,  depth: 14, limit: true },
+    { elo: 2300, label: 'Competitivo ≈2300',  blunder: 0,    eloOpt: 2200,  skill: 13, depth: 16, limit: true },
+    { elo: 2600, label: 'Maestro ≈2600',      blunder: 0,    eloOpt: 2400,  skill: 17, depth: 18, limit: true },
+    { elo: 3190, label: 'Ultra ≈3190',        blunder: 0,    eloOpt: 2600,  skill: 20, depth: 22, limit: true }
   ];
 
   // Debug solo con ?debug=1 en la URL

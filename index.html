@@ -9,7 +9,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=20261129">
+  <link rel="stylesheet" href="css/app.css?v=20261132">
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="js/vendor/chess.min.js"></script>
@@ -55,7 +55,7 @@
             </div>
             <div class="home-footer">
               <span id="home-conn-state" class="home-conn-state" data-dev="home-conn-state"><span class="conn-dot"></span>P2P desconectado</span>
-              <span id="version-badge" class="version-badge">B-Chess Desktop v2.2.18</span>
+              <span id="version-badge" class="version-badge">B-Chess Desktop v2.2.19</span>
               <button id="btn-settings-footer" class="icon-btn" title="Ajustes" aria-label="Ajustes" data-dev="btn-settings-footer">
                 <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.9 1.9M16.6 16.6l1.9 1.9M18.5 5.5l-1.9 1.9M7.4 16.6l-1.9 1.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
               </button>
@@ -79,7 +79,7 @@
           <div class="form-block row" data-dev="setup-progressive">
             <div>
               <label class="form-label" for="toggle-progressive" style="margin-bottom:2px;">Modo progresivo</label>
-              <div class="muted" style="font-size:11px;max-width:260px;">Al ganar 6 partidas con la dificultad elegida, sube un peldaño. Si pierdes, se mantiene. Empieza siempre donde hayas dejado la dificultad.</div>
+              <div class="text-info" style="font-size:11px;max-width:260px;">Al ganar 6 partidas con la dificultad elegida, sube un peldaño. Si pierdes, se mantiene. Empieza siempre donde hayas dejado la dificultad.</div>
             </div>
             <button id="toggle-progressive" class="toggle on" role="switch" aria-checked="true">ON</button>
           </div>
@@ -87,7 +87,7 @@
           <div class="form-block" data-dev="setup-difficulty">
             <label class="form-label" for="difficulty">Dificultad <b id="difficulty-value">Normal</b></label>
             <input id="difficulty" class="range" type="range" min="1" max="10" value="5">
-            <div class="muted" id="difficulty-streak" data-dev="difficulty-streak" style="font-size:11px;margin-top:6px;">Racha vs IA: 0/6 — gana 6 seguidas y sube un peldaño</div>
+            <div class="text-ok" id="difficulty-streak" data-dev="difficulty-streak" style="font-size:11px;margin-top:6px;">Racha vs IA: 0/6 — gana 6 seguidas y sube un peldaño</div>
           </div>
           <div class="form-block" data-dev="setup-clock">
             <label class="form-label" for="clock-ai">Reloj</label>
@@ -131,7 +131,7 @@
         <!-- ============ ONLINE (elegir conexión / crear / unirse) ============ -->
         <section id="screen-online" class="screen" data-dev="screen-online">
           <h2 class="screen-title" data-dev="online-title">Jugar en línea</h2>
-          <p class="muted" data-dev="online-sub">Elige cómo conectas; cada vez solo uno puede estar activo.</p>
+          <p class="text-info" data-dev="online-sub">Elige cómo conectas; cada vez solo uno puede estar activo.</p>
           <!-- Barra de estado: muestra qué conexión está en vivo (los botones de abajo solo eligen el modo) -->
           <div class="conn-status-bar" id="conn-status-bar" data-dev="conn-status-bar" role="status" aria-live="polite">
             <div class="conn-antenna" id="antenna-p2p" data-state="idle" data-dev="antenna-p2p" title="Estado de la conexión P2P (internet)">
@@ -344,6 +344,63 @@
           </div>
           <button id="btn-lobby-back" class="btn btn-ghost" data-dev="btn-lobby-back">Cancelar sala</button>
         </section>
+        <!-- ============ ACTUALIZACIÓN DE VERSIÓN ============ -->
+        <section id="screen-update" class="screen update-screen-root" data-dev="screen-update">
+          <div class="update-shell">
+            <div class="update-banner">
+              <div class="update-logo">
+                <img src="icono.ico" alt="B-Chess Desktop" class="update-logo-img">
+                <span class="update-app-name">B-CHESS</span>
+              </div>
+              <div class="update-hero-text">
+                <div class="update-hero-title">Una nueva versión está disponible</div>
+                <div class="update-hero-sub">B-Chess Desktop <span id="update-current-version">v0.0.0</span> → <span id="update-latest-version">v0.0.0</span></div>
+              </div>
+            </div>
+
+            <div class="update-card">
+              <div class="update-card-title">Novedades</div>
+              <div id="update-notes-list" class="update-notes-list"></div>
+            </div>
+
+            <div class="update-card update-card-warning">
+              <div class="update-card-title">Problemas conocidos o advertencias</div>
+              <div id="update-warnings-list" class="update-notes-list"></div>
+            </div>
+
+            <div class="update-actions">
+              <button id="btn-update-primary" class="btn btn-primary update-btn-primary" data-dev="btn-update-primary">
+                <span class="update-btn-label">Descargar e instalar</span>
+              </button>
+              <button id="btn-update-later" class="btn btn-ghost update-btn-later" data-dev="btn-update-later">Más tarde</button>
+            </div>
+
+            <div id="update-progress-wrap" class="update-progress-wrap hidden" data-dev="update-progress-wrap">
+              <div class="update-progress-info">
+                <span id="update-progress-percent">0%</span> · <span id="update-progress-bytes">0 B / 0 B</span>
+              </div>
+              <div class="update-progress-track">
+                <div id="update-progress-bar" class="update-progress-bar" style="width:0%"></div>
+              </div>
+              <div id="update-progress-status" class="update-progress-status">Preparando descarga…</div>
+            </div>
+
+            <div id="update-error-wrap" class="update-error-wrap hidden" data-dev="update-error-wrap">
+              <div class="update-error-title">No se pudo completar la actualización</div>
+              <div class="update-error-detail" id="update-error-detail">
+                Algo falló. Lee el mensaje completo abajo.
+              </div>
+              <button id="btn-update-retry" class="btn btn-primary" data-dev="btn-update-retry">Reintentar ahora</button>
+              <button id="btn-update-manual" class="btn btn-ghost" data-dev="btn-update-manual">Ir al release en el navegador</button>
+            </div>
+
+            <div class="update-footnote">
+              <span class="update-footnote-title">Release notes:</span>
+              <a class="update-footnote-link" id="link-release-notes" href="https://github.com/ElalChico/B-Chess-Desktop/releases" target="_blank" rel="noopener noreferrer">Ver en GitHub</a>
+            </div>
+          </div>
+        </section>
+
         <!-- ============ SETTINGS ============ -->
         <section id="screen-settings" class="screen" data-dev="screen-settings">
           <h2 class="screen-title" data-dev="settings-title">Ajustes</h2>
@@ -392,7 +449,7 @@
                     <button data-v="gm2000">GM-2000</button>
                     <button data-v="movefull" class="selected">Move Full</button>
                   </div>
-                  <p class="muted" style="font-size:11px;margin:6px 0 0;">Atenuado: solo la ficha atenuada. GM-2000: casilla destino en rojo clarito sin marco. Move Full: la ficha se mueve al destino.</p>
+                  <p class="text-info" style="font-size:11px;margin:6px 0 0;">Atenuado: solo la ficha atenuada. GM-2000: casilla destino en rojo clarito sin marco. Move Full: la ficha se mueve al destino.</p>
                 </div>
               </div>
               <div class="form-block row" data-dev="settings-coordinates">
@@ -413,7 +470,7 @@
               </div>
               <div class="form-block privacy-card" data-dev="settings-privacy">
                 <label class="form-label">Privacidad (partidas en línea)</label>
-                <p class="privacy-note">Elige qué compartes con el rival conectado. Todo está activado por defecto; nada de esto te afecta si juegas vs IA.</p>
+                <p class="privacy-note text-warn">Elige qué compartes con el rival conectado. Todo está activado por defecto; nada de esto te afecta si juegas vs IA.</p>
                 <div class="privacy-rows">
                   <div class="privacy-row">
                     <div class="privacy-text">
@@ -449,16 +506,16 @@
                 <label class="form-label">Barra lateral</label>
                 <button id="btn-settings-rail" class="btn btn-small" data-dev="btn-settings-rail">Personalizar barra</button>
               </div>
+              <div class="settings-footer" data-dev="settings-footer">
+                <div class="settings-signature">Creado por <span class="sig-name">s4møth</span> / <span class="sig-handle">Elal Chico</span></div>
+                <div class="settings-signature-buttons">
+                  <a class="btn btn-small btn-ghost" href="https://github.com/ElalChico" target="_blank" rel="noopener noreferrer">GitHub</a>
+                  <a class="btn btn-small btn-ghost" href="https://github.com/ElalChico/B-Chess-Desktop" target="_blank" rel="noopener noreferrer">Repositorio</a>
+                </div>
+              </div>
+              <button id="btn-settings-back" class="btn btn-ghost" data-dev="btn-settings-back">Volver</button>
             </div>
           </div>
-          <div class="settings-footer" data-dev="settings-footer">
-            <div class="settings-signature">Creado por <span class="sig-name">s4møth</span> / <span class="sig-handle">Elal Chico</span></div>
-            <div class="settings-signature-buttons">
-              <a class="btn btn-small btn-ghost" href="https://github.com/ElalChico" target="_blank" rel="noopener noreferrer">GitHub</a>
-              <a class="btn btn-small btn-ghost" href="https://github.com/ElalChico/B-Chess-Desktop" target="_blank" rel="noopener noreferrer">Repositorio</a>
-            </div>
-          </div>
-          <button id="btn-settings-back" class="btn btn-ghost" data-dev="btn-settings-back">Volver</button>
         </section>
         <!-- ============ GAME ============ -->
         <section id="screen-game" class="screen" data-dev="screen-game">
@@ -615,27 +672,6 @@
                 </button>
               </div>
               <button id="btn-close-end-modal" class="btn btn-end-close" data-dev="btn-close-end-modal">Cerrar</button>
-            </div>
-          </div>
-          <!-- Actualización disponible (estilo de la app) -->
-          <div id="update-modal" class="modal" data-dev="update-modal" role="dialog" aria-modal="true" aria-labelledby="update-modal-title">
-            <div class="modal-content end-modal">
-              <div class="end-modal-header">
-                <div class="end-badge draw" id="update-badge">Actualización</div>
-              </div>
-              <h2 id="update-modal-title" style="font-size:24px;margin-bottom:4px;">B-Chess Desktop</h2>
-              <p class="muted" style="font-size:14px;margin-bottom:14px;">Hay una versión nueva disponible.</p>
-              <p class="muted" id="update-notes" style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:16px;text-align:left;border:1px solid var(--line);background:var(--panel-2);border-radius:10px;padding:10px 12px;max-height:160px;overflow-y:auto;white-space:pre-wrap;"></p>
-              <div class="end-options">
-                <button class="end-option" id="btn-update-now">
-                  <span class="end-option-title">Descargar e instalar</span>
-                  <span class="end-option-sub">Se aplicará al reiniciar</span>
-                </button>
-                <button class="end-option" id="btn-update-later">
-                  <span class="end-option-title">Más tarde</span>
-                  <span class="end-option-sub">Seguiré usando esta versión</span>
-                </button>
-              </div>
             </div>
           </div>
             </div>
@@ -904,16 +940,16 @@
       <div id="chart-expand-body" class="chart chart-expand-body"></div>
     </div>
   </div>
-  <script src="js/firebase-config.js?v=20261129"></script>
-  <script src="js/pieces.js?v=20261129"></script>
-  <script src="js/sounds.js?v=20261129"></script>
-  <script src="js/engine.js?v=20261129"></script>
-  <script src="js/net.js?v=20261129"></script>
-  <script src="js/lan.js?v=20261129"></script>
-  <script src="js/profile.js?v=20261129"></script>
-  <script src="js/stats.js?v=20261129"></script>
-  <script src="js/inspector.js?v=20261129"></script>
-  <script src="js/app.js?v=20261129"></script>
-  <script src="js/update.js?v=20261129"></script>
+  <script src="js/firebase-config.js?v=20261132"></script>
+  <script src="js/pieces.js?v=20261132"></script>
+  <script src="js/sounds.js?v=20261132"></script>
+  <script src="js/engine.js?v=20261132"></script>
+  <script src="js/net.js?v=20261132"></script>
+  <script src="js/lan.js?v=20261132"></script>
+  <script src="js/profile.js?v=20261132"></script>
+  <script src="js/stats.js?v=20261132"></script>
+  <script src="js/inspector.js?v=20261132"></script>
+  <script src="js/app.js?v=20261132"></script>
+  <script src="js/update.js?v=20261132"></script>
 </body>
 </html>

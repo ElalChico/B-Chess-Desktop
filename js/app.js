@@ -211,11 +211,6 @@
   }
 
   // Sincroniza el estado del botón con la clase fullscreen incluso cuando cambia por otra vía (atajo F11, F, click)
-  (function watchFullscreen() {
-    var observer = new MutationObserver(function () { syncFullscreenButton(); });
-    observer.observe(document.body, { attributes: true, attributeFilter: ['class'] });
-  })();
-
   function toggleFullscreen() {
     var isFull = document.body.classList.toggle('fullscreen');
     // Ajustar tablero
@@ -233,19 +228,28 @@
     // En modo Tablero completo los relojes ya están columna izquierda; no forzar ancho
     if (!isFullBoard) {
       var board = S.hasBoard ? $('#board') : null;
-      var bw = board ? board.getBoundingClientRect().width : 0;
+      var bw = board ? Math.round(board.getBoundingClientRect().width) : 0;
       var us = document.getElementById('card-us');
       var them = document.getElementById('card-them');
-      if (bw) [us, them].forEach(function (el) { if (el) el.style.width = bw + 'px'; });
-    } else {
+      if (bw && S._layoutBwApplied !== bw) {
+        if (us) us.style.width = bw + 'px';
+        if (them) them.style.width = bw + 'px';
+        S._layoutBwApplied = bw;
+      }
+    } else if (S._layoutBwApplied !== 0) {
       var us = document.getElementById('card-us');
       var them = document.getElementById('card-them');
       [us, them].forEach(function (el) { if (el) el.style.width = ''; });
+      S._layoutBwApplied = 0;
     }
     var panel = document.getElementById('game-panel');
     if (panel && !document.querySelector('.game-wrap.panel-collapsed')) panel.style.height = '';
   }
-  window.addEventListener('resize', function () { syncGameLayout(); });
+  var resizeRaf = 0;
+  window.addEventListener('resize', function () {
+    if (resizeRaf) return; // coalescer lecturas de layout por frame
+    resizeRaf = requestAnimationFrame(function () { resizeRaf = 0; syncGameLayout(); });
+  });
 
   // ================= Barra lateral =================
   var RAIL_KEY = 'bchess-v2-rail';
@@ -508,7 +512,7 @@
     var moves = S.game.moves({ square: fromAlg, verbose: true });
     var move = null;
     for (var i = 0; i < moves.length; i++) if (moves[i].to === toAlg) { move = moves[i]; break; }
-    if (!move) { S.premoveQueue = []; return false; }
+    if (!move) { if (S.premoveQueue.length) showToast('Premove no ejecutable'); S.premoveQueue = []; return false; }
     if (move.promotion) {
       S.pendingPromotion = { from: from, to: to };
       showPromotionModal(move.color);
@@ -522,7 +526,7 @@
     var beforeWhite = S.clocks.w;
     var beforeBlack = S.clocks.b;
     var result = S.game.move({ from: fromAlg, to: toAlg, promotion: promotion || undefined });
-    if (!result) { S.premoveQueue = []; return false; }
+    if (!result) { if (S.premoveQueue.length) showToast('Premove no ejecutable'); S.premoveQueue = []; return false; }
     afterMove(result, false, beforeWhite, beforeBlack);
     return true;
   }
@@ -3281,13 +3285,15 @@
         }
       }
     }
-    // Aplicar la cola de premoves en orden (signo de jugadas ya hechas sino conocidas)
+    // Aplicar la cola de premoves en orden (conversión índice→algebraico; pm.from/to son 0..63)
     for (const pm of S.premoveQueue) {
-      const p = m[pm.from];
-      if (!p) continue;
-      delete m[pm.from];
+      if (pm.to === null || pm.to === undefined) continue; // aún en construcción
+      const fromAlg = sqToAlgebraic(pm.from), toAlg = sqToAlgebraic(pm.to);
+      const p = m[fromAlg];
+      if (!p) continue; // origen vacío en la posición actual (pieza comida por el rival, etc.)
+      delete m[fromAlg];
       const type = pm.promotion ? pm.promotion : p.type;
-      m[pm.to] = { type: type, color: p.color, ghost: true };
+      m[toAlg] = { type: type, color: p.color, ghost: true };
     }
     return m;
   }
@@ -3375,6 +3381,35 @@
     syncGameLayout();
   }
 
+  function flipFenTurn(fen) {
+    var parts = String(fen).split(' ');
+    parts[1] = (parts[1] === 'w') ? 'b' : 'w';
+    parts[3] = '-'; // borra la flag en passant: la jugada del rival intermedia es desconocida
+    return parts.join(' ');
+  }
+
+  // Valida un premove simulando la cola completa en orden.
+  // Cada premove ocurre en TU turno (el rival movió entre cada jugada suya aunque no sabemos qué):
+  // por eso se invierte el turno antes de cada jugada simulada; chess.js lo alterna al mover,
+  // y nosotros lo forzamos de vuelta a tu color tras cada step.
+  function premoveLegal(fromIdx, toIdx, promo) {
+    try {
+      var clone = new Chess();
+      if (!clone.load(flipFenTurn(S.game.fen()))) return false;
+      for (var i = 0; i < S.premoveQueue.length; i++) {
+        var pm = S.premoveQueue[i];
+        if (pm.to === null || pm.to === undefined) continue;
+        var mv = clone.move({ from: sqToAlgebraic(pm.from), to: sqToAlgebraic(pm.to), promotion: pm.promotion || 'q' });
+        if (!mv) return false; // cola previa rota (p. ej. pieza comida por el rival)
+        if (!clone.load(flipFenTurn(clone.fen()))) return false; // devuelve el turno a tu color
+      }
+      // Tras el flip inicial el clon está en tu color; cada move simulado alterna el turno y lo devolvemos al tuyo.
+      // No se invierte antes del movimiento propuesto: ya está en tu color.
+      var next = clone.move({ from: sqToAlgebraic(fromIdx), to: sqToAlgebraic(toIdx), promotion: promo || undefined });
+      return !!next;
+    } catch (e) { return false; }
+  }
+
   function legalTargetsFrom(sq) {
     var alg = sqToAlgebraic(sq);
     var moves = S.game.moves({ square: alg, verbose: true });
@@ -3405,7 +3440,11 @@
     if (!cell) return;
     var sq = parseInt(cell.dataset.square, 10);
     var alg = sqToAlgebraic(sq);
-    var piece = S.game.get(alg);
+    // Pieza según posición visual: superpone la cola de premoves (FEN real queda ignorada para premove).
+    // Permite encadenar premoves sobre piezas ya pre-movidas (la casilla destino está vacía en la FEN real).
+    var piece = isLocalTurn()
+      ? S.game.get(alg)
+      : (computeVisualPieces(viewGame())[alg] || null);
 
     // Si es turno local, comportamiento normal
     if (isLocalTurn()) {
@@ -3454,7 +3493,7 @@
         building.from = sq;
         building.promotion = null;
         startDrag(e, sq);
-        renderBoard();
+        markPremoveFromCell(sq);
         return;
       }
       // Clic en la misma pieza origen → cancelar este premove
@@ -3464,8 +3503,13 @@
         return;
       }
       // Clic en cualquier otra casilla → fijar/actualizar destino y completar este premove
+      var promoFix = detectPromo(building.from, sq, building.promotion);
+      if (!premoveLegal(building.from, sq, promoFix)) {
+        showToast('Movimiento ilegal');
+        return;
+      }
       building.to = sq;
-      building.promotion = detectPromo(building.from, sq, building.promotion);
+      building.promotion = promoFix;
       renderBoard();
       return;
     }
@@ -3474,11 +3518,20 @@
     if (isOwn) {
       S.premoveQueue.push({ from: sq, to: null, promotion: null });
       startDrag(e, sq);
-      renderBoard();
+      markPremoveFromCell(sq);
       return;
     }
 
     // Clic en casilla vacía u otra pieza: nada (no limpiamos la cola, solo el en construcción)
+  }
+
+  // Marca visual ligera de la casilla origen de un premove en construcción (sin re-render).
+  // Se usa durante el gesto para no destruir el nodo bajo el puntero (evita pointercancel temprano).
+  function markPremoveFromCell(sq) {
+    var board = $('#board');
+    if (!board) return;
+    var cell = board.querySelector('.square[data-square="' + sq + '"]');
+    if (cell) cell.classList.add('premove-from');
   }
 
   // ================= Drag & drop =================
@@ -3557,6 +3610,11 @@
           var mv = temp.move({ from: fromAlg, to: toAlg });
           if (mv && mv.promotion) promo = mv.promotion;
         } catch (e2) {}
+        if (!premoveLegal(drag.from, target, promo)) {
+          showToast('Movimiento ilegal');
+          renderBoard();
+          return;
+        }
         // Si hay un premove en construcción para esta misma pieza, completarlo
         var buildingIdx = -1;
         for (var i = S.premoveQueue.length - 1; i >= 0; i--) {

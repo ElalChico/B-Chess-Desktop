@@ -3,6 +3,9 @@
  * - F2 activa/desactiva el modo inspector.
  * - En modo inspector, al pasar el ratón se resalta el elemento.
  * - Al hacer clic se copia su data-dev (o un selector generado) al portapapeles.
+ *
+ * Los listeners de ratón en fase de captura solo existen MIENTRAS el modo está activo:
+ * mantenerlos activos siempre penaliza cada evento del navegador (ardida con mouseover).
  */
 (function () {
   let enabled = false;
@@ -35,33 +38,24 @@
     return parts.join(' > ');
   }
 
-  function toggle() {
-    enabled = !enabled;
-    document.body.classList.toggle('dev-mode', enabled);
-    if (enabled) makePanel();
-    else if (panel) { panel.remove(); panel = null; }
+  function getOutlinedEl(target) {
+    return target && target.nodeType === 1 ? target : (target && target.parentElement) || null;
   }
 
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'F2') { e.preventDefault(); toggle(); }
-  });
+  // Listeners capturadores: solo existen mientras el modo está activo.
+  function onMouseOverCapture(e) {
+    const t = getOutlinedEl(e.target);
+    if (!t || !t.classList) return;
+    t.classList.add('dev-highlight');
+    if (panel) panel.textContent = ensureSelector(t);
+  }
 
-  document.addEventListener('mouseover', function (e) {
-    if (!enabled) return;
-    const t = e.target;
-    if (t && t.classList) {
-      t.classList.add('dev-highlight');
-      panel.textContent = ensureSelector(t);
-    }
-  }, true);
+  function onMouseOutCapture(e) {
+    const t = getOutlinedEl(e.target);
+    if (t && t.classList) t.classList.remove('dev-highlight');
+  }
 
-  document.addEventListener('mouseout', function (e) {
-    if (!enabled) return;
-    if (e.target && e.target.classList) e.target.classList.remove('dev-highlight');
-  }, true);
-
-  document.addEventListener('click', function (e) {
-    if (!enabled) return;
+  function onClickCapture(e) {
     e.preventDefault();
     e.stopPropagation();
     const sel = ensureSelector(e.target);
@@ -69,5 +63,27 @@
       navigator.clipboard.writeText(sel).catch(function () {});
     }
     if (window.showToast) window.showToast('Copiado: ' + sel);
-  }, true);
+  }
+
+  function toggle() {
+    enabled = !enabled;
+    document.body.classList.toggle('dev-mode', enabled);
+    if (enabled) {
+      makePanel();
+      document.addEventListener('mouseover', onMouseOverCapture, true);
+      document.addEventListener('mouseout', onMouseOutCapture, true);
+      document.addEventListener('click', onClickCapture, true);
+    } else {
+      document.removeEventListener('mouseover', onMouseOverCapture, true);
+      document.removeEventListener('mouseout', onMouseOutCapture, true);
+      document.removeEventListener('click', onClickCapture, true);
+      if (panel) { panel.remove(); panel = null; }
+      // Limpiar cualquier resaltado que quedara pendiente
+      document.querySelectorAll('.dev-highlight').forEach(function (el) { el.classList.remove('dev-highlight'); });
+    }
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'F2') { e.preventDefault(); toggle(); }
+  });
 })();

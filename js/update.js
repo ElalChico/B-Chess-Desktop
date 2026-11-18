@@ -1,18 +1,37 @@
 /*
  * B-Chess Desktop · Actualizador
- * - Electron: autoUpdater nativo (GitHub Releases). El modal de la app muestra
- *   "Hay una versión nueva" y al confirmar se dispara la descarga y el reinicio.
- * - Navegador: consulta GitHub API Releases; muestra el mismo modal. El botón
- *   "Descargar e instalar" hace recarga/aplicación del SW si hay uno nuevo.
+ * - Electron: autoUpdater nativo (GitHub Releases).
+ * - Abre la pantalla #screen-update con novedades, progreso, error y botón para reinstalar.
+ * - En navegador: misma pantalla para comprobar versión local vs última versión disponible.
  */
 window.BCHESS_UPDATE = (function () {
   'use strict';
 
-  var CURRENT_VERSION = '2.2.18';
+  var CURRENT_VERSION = '2.2.19';
   var REPO = 'ElalChico/B-Chess-Desktop';
   var CHECK_URL = 'https://api.github.com/repos/' + REPO + '/releases/latest';
 
-  // ---------- Registro del Service Worker (auto-update al instante) ----------
+  // Notas de la versión v2.2.19 (editar en cada release)
+  var RELEASE_NOTES = [
+    { type: 'feat', text: 'Premove estilo Lichess/Chess.com: la pieza es literalmente movida a la casilla destino en cuanto fijas el premove, queda translucida (55%) hasta tu turno. Encadenado ilimitado (e7-e5-e4...) con clics o arrastre.' },
+    { type: 'fix', text: 'Premove ilegal no se fija (mismo criterio que Lichess): se simula la cola completa en un clon del motor invirtiendo el turno; se rechaza cualquier movimiento que deje a tu rey en jaque o que no sea legal en la posicion simulada.' },
+    { type: 'fix', text: 'Pantalla dedicada de actualización (#screen-update): progreso en tiempo real, boton Reiniciar ahora funcional y reintento con un clic. Eliminamos el modal viejo inerte con botones sin wiring.' },
+    { type: 'fix', text: 'Actualizacion automatica robusta y visible: deteccion, descarga automatica e instalacion al cerrar, con detalle del error en pantalla y reintento de un vistazo.' },
+    { type: 'feat', text: 'Ajustes: todo lo que estaba cortado abajo (Barra lateral) ahora es alcanzable: la columna derecha hace scroll y el footer queda pinado dentro de la columna desplazable.' },
+    { type: 'feat', text: 'Motor de IA: escalonado de fuerza mas perceptible para niveles 1-5 (blunders) y Elo opt efectivo en niveles superiores; honestidad sobre el techo del Stockfish lite (~1800-2100 en hardware domestico).' },
+    { type: 'fix', text: 'Premove ya no se suelta antes de tiempo: sin re-render del tablero bajo el puntero durante el gesto, y el ghost se elimina al soltar/cancelar.' },
+    { type: 'fix', text: 'Rendimiento percibido en clicks: listeners del Inspector de debug ya no existen mientras el modo dev este apagado; eliminado MutationObserver body que disparaba en cada clase; eliminados todos los backdrop-filter: blur de pantalla completa.' },
+    { type: 'feat', text: 'Texto con jerarquia semantica: importante en verde suave, advertencias en ambar palido, sugerencias en azul apagado; etiquetas en color; rubrica verde bajo titulos de pantalla.' },
+    { type: 'exp', text: 'Incluye v2.2.18: boton Pantalla completa profesional con glow respiratorio y modo Modo Progresivo respetado.' }
+  ];
+
+  var RELEASE_WARNINGS = [
+    'El auto-update requiere que el instalador se ejecute desde la carpeta de programas (no desde un .exe copiado al escritorio).',
+    'La actualización se descarga e instala al cerrar la app; si la actualización falla, revisa el mensaje de error en pantalla.',
+    'Los datos de la app (partidas, avances, perfil) se conservan porque no se borra AppData/AppData/Roaming/B-Chess-Desktop.',
+    'Notas futuras: si quieres ver las nuevas versiones con antelación, v2.3.x incluirá gráficos del perfil y partidas en vivo mejoradas.'
+  ];
+
   function registerSW() {
     var isAllowed = location.protocol === 'https:' ||
       location.hostname === 'localhost' ||
@@ -38,8 +57,7 @@ window.BCHESS_UPDATE = (function () {
         if (!data || !data.tag_name) return null;
         var latest = String(data.tag_name).replace(/^v/, '');
         var available = compareSemver(latest, CURRENT_VERSION) > 0;
-        var notes = (data.body || '').replace(/\s+$/, '').split('\n').filter(function (l) { return l.trim(); }).join('\n');
-        return { latest: latest, available: available, url: data.html_url, notes: notes };
+        return { latest: latest, available: available, url: data.html_url, notes: (data.body || '').trim() };
       })
       .catch(function () { return null; });
   }
@@ -52,120 +70,140 @@ window.BCHESS_UPDATE = (function () {
     });
   }
 
-  // ---------- Modal de actualización estilizado ----------
-  var modalState = { version: null, downloaded: false, notes: '', downloading: false, progress: 0 };
+  function renderReleaseNotes() {
+    var host = document.getElementById('update-notes-list');
+    if (!host) return;
+    var html = RELEASE_NOTES.map(function (n) {
+      var prefix = n.type === 'fix' ? '<strong>Corrección</strong>' : (n.type === 'exp' ? '<strong>Experimental</strong>' : '<strong>Nuevo</strong>');
+      return '<div class="update-note-item">' + prefix + ' — ' + escapeHtml(n.text) + '</div>';
+    }).join('');
+    host.innerHTML = html;
+  }
 
-  function openModal(opts) {
+  function renderWarnings() {
+    var host = document.getElementById('update-warnings-list');
+    if (!host) return;
+    var html = RELEASE_WARNINGS.map(function (w) {
+      return '<div class="update-note-item">' + escapeHtml(w) + '</div>';
+    }).join('');
+    host.innerHTML = html;
+  }
+
+  function escapeHtml(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function setProgress(pct, transferred, total) {
+    var bar = document.getElementById('update-progress-bar');
+    var pctEl = document.getElementById('update-progress-percent');
+    var bytesEl = document.getElementById('update-progress-bytes');
+    var statusEl = document.getElementById('update-progress-status');
+    var p = Math.max(0, Math.min(100, Number(pct) || 0));
+    if (bar) bar.style.width = p + '%';
+    if (pctEl) pctEl.textContent = Math.round(p) + '%';
+    if (bytesEl) bytesEl.textContent = formatBytes(transferred || 0) + ' / ' + formatBytes(total || 0);
+    if (statusEl) statusEl.textContent = p >= 100 ? 'Instalando…' : 'Descargando desde GitHub…';
+  }
+
+  function formatBytes(bytes) {
+    var units = ['B', 'KB', 'MB', 'GB'];
+    var i = 0;
+    var n = Number(bytes) || 0;
+    while (n >= 1024 && i < units.length - 1) { n = n / 1024; i++; }
+    return (i === 0 ? n + ' ' : n.toFixed(1) + ' ') + units[i];
+  }
+
+  function showUpdateScreen(opts) {
     opts = opts || {};
-    var modal = document.getElementById('update-modal');
-    if (!modal) return;
-
-    var title = document.getElementById('update-modal-title');
-    var notes = document.getElementById('update-notes');
-    var badge = document.getElementById('update-badge');
-    var nowTitle = document.querySelector('#btn-update-now .end-option-title');
-    var nowSub = document.querySelector('#btn-update-now .end-option-sub');
-
-    var ver = opts.version || modalState.version || CURRENT_VERSION;
-    var downloaded = !!opts.downloaded;
-    var downloading = !!opts.downloading;
-    var progress = Number(opts.progress || 0);
-
-    modalState.version = ver;
-    modalState.downloaded = downloaded;
-    modalState.downloading = downloading;
-    modalState.progress = progress;
-
-    if (title) title.textContent = 'B-Chess Desktop v' + ver;
-    if (notes) notes.textContent = opts.notes || '';
-    if (badge) badge.textContent = downloaded ? 'Lista para instalar' : (downloading ? 'Descargando… ' + Math.round(progress) + '%' : 'Actualización disponible');
-    if (nowTitle) nowTitle.textContent = downloaded ? 'Reiniciar ahora' : (downloading ? 'Cancelar aviso' : 'Descargar e instalar');
-    if (nowSub) nowSub.textContent = downloaded ? 'Se aplicará el reinicio' : (downloading ? 'Ya está en marcha…' : 'Se aplicará al reiniciar');
-
-    modal.classList.add('show');
-  }
-
-  function setProgress(p) {
-    var pct = Math.max(0, Math.min(100, p || 0));
-    var notes = document.getElementById('update-notes');
-    var badge = document.getElementById('update-badge');
-    if (badge) badge.textContent = 'Descargando… ' + Math.round(pct) + '%';
-    if (notes) {
-      notes.textContent = 'Descargando B-Chess Desktop v' + (modalState.version || CURRENT_VERSION) + ' desde GitHub… ' + Math.round(pct) + '%';
+    var ver = opts.version || CURRENT_VERSION;
+    renderReleaseNotes();
+    renderWarnings();
+    var cur = document.getElementById('update-current-version');
+    if (cur) cur.textContent = 'v' + CURRENT_VERSION;
+    var latest = document.getElementById('update-latest-version');
+    if (latest) latest.textContent = 'v' + ver;
+    var link = document.getElementById('link-release-notes');
+    if (link) link.href = 'https://github.com/ElalChico/B-Chess-Desktop/releases/tag/v' + ver;
+    var primary = document.getElementById('btn-update-primary');
+    if (primary) {
+      primary.classList.add('hidden');
+      // Reiniciar estilo cuando ya esté descargada
     }
+    var pWrap = document.getElementById('update-progress-wrap');
+    var errWrap = document.getElementById('update-error-wrap');
+    if (opts.state === 'downloading') {
+      if (pWrap) pWrap.classList.remove('hidden');
+      if (errWrap) errWrap.classList.add('hidden');
+      if (primary) primary.classList.add('hidden');
+      setProgress(0, 0, 0);
+    } else if (opts.state === 'downloaded') {
+      if (pWrap) pWrap.classList.remove('hidden');
+      if (errWrap) errWrap.classList.add('hidden');
+      if (primary) {
+        primary.classList.remove('hidden');
+        var label = primary.querySelector('.update-btn-label');
+        if (label) label.textContent = 'Reiniciar ahora';
+      }
+      setProgress(100, 0, 0);
+      if (statusElVisible()) statusText('Descarga completada. Reinicia para actualizar.');
+    } else if (opts.state === 'error') {
+      if (pWrap) pWrap.classList.add('hidden');
+      if (errWrap) errWrap.classList.remove('hidden');
+      var detail = document.getElementById('update-error-detail');
+      if (detail) detail.textContent = opts.message || 'Fallo al descargar. Revisa la conexión o inténtalo de nuevo.';
+      if (primary) primary.classList.remove('hidden');
+      var label2 = primary ? primary.querySelector('.update-btn-label') : null;
+      if (label2) label2.textContent = 'Reintentar ahora';
+    } else {
+      // Estado inicial: mostrar botón "Descargar e instalar"
+      if (pWrap) pWrap.classList.add('hidden');
+      if (errWrap) errWrap.classList.add('hidden');
+      if (primary) {
+        primary.classList.remove('hidden');
+        var label3 = primary.querySelector('.update-btn-label');
+        if (label3) label3.textContent = 'Descargar e instalar';
+      }
+    }
+    if (typeof window.setScreen === 'function') window.setScreen('update');
+    else if (window.__setScreen) window.__setScreen('update');
   }
 
-  function setError(message) {
-    var notes = document.getElementById('update-notes');
-    var badge = document.getElementById('update-badge');
-    var nowTitle = document.querySelector('#btn-update-now .end-option-title');
-    var nowSub = document.querySelector('#btn-update-now .end-option-sub');
-    if (badge) badge.textContent = 'Error de actualización';
-    if (notes) notes.textContent = 'No se pudo descargar la actualización:\n' + (message || 'fallo desconocido');
-    if (nowTitle) nowTitle.textContent = 'Reintentar';
-    if (nowSub) nowSub.textContent = 'Pulsa para volver a intentar la descarga';
-  }
+  function statusElVisible() { return !!document.getElementById('update-progress-status'); }
+  function statusText(t) { var s = document.getElementById('update-progress-status'); if (s) s.textContent = t; }
 
-  function closeModal() {
-    var modal = document.getElementById('update-modal');
-    if (modal) modal.classList.remove('show');
-  }
-
-  function wireModalButtons() {
-    var laterBtn = document.getElementById('btn-update-later');
-    var nowBtn = document.getElementById('btn-update-now');
-    if (laterBtn) laterBtn.addEventListener('click', closeModal);
-    if (nowBtn) nowBtn.addEventListener('click', function () {
-      // Si ya estaba descargada (Electron), reiniciar para aplicar.
-      // Si no, disparar la descarga manualmente (es efectuada automáticamente al arrancar).
-      var isElectron = !!(window.BCHESS_DESKTOP && window.BCHESS_DESKTOP.isElectron);
-      if (isElectron) {
-        if (modalState.downloaded && typeof window.BCHESS_DESKTOP.quitAndInstall === 'function') {
-          window.BCHESS_DESKTOP.quitAndInstall();
-          return;
-        }
-        if (typeof window.BCHESS_DESKTOP.downloadUpdate === 'function') {
-          openModal({ version: modalState.version || CURRENT_VERSION, notes: 'Descargando actualización v' + (modalState.version || CURRENT_VERSION) + '…', downloading: true, progress: 0 });
-          window.BCHESS_DESKTOP.downloadUpdate();
-          return;
-        }
+  function wireButtons() {
+    var later = document.getElementById('btn-update-later');
+    if (later) later.addEventListener('click', function () {
+      if (typeof window.__setScreen === 'function') window.__setScreen('home');
+    });
+    var primary = document.getElementById('btn-update-primary');
+    if (primary) primary.addEventListener('click', function () {
+      var label = primary.querySelector('.update-btn-label');
+      var text = label ? label.textContent : '';
+      var desk = window.BCHESS_DESKTOP;
+      if (desk && desk.isElectron && typeof desk.quitAndInstall === 'function' && (text === 'Reiniciar ahora')) {
+        desk.quitAndInstall();
+      } else if (desk && desk.isElectron && typeof desk.downloadUpdate === 'function') {
+        doDownloadFlow();
       } else {
-        applyUpdateNow();
+        // En navegador: abrir release
+        window.location.href = 'https://github.com/ElalChico/B-Chess-Desktop/releases/latest';
       }
     });
-  }
-
-  function markOutdated(badgeEl, info) {
-    if (!badgeEl) return;
-    badgeEl.textContent = 'Actualización v' + info.latest + ' disponible';
-    badgeEl.classList.add('has-update');
-  }
-
-  function updateFooterBadge() {
-    var badge = document.getElementById('version-badge');
-    if (badge) badge.textContent = 'B-Chess Desktop v' + CURRENT_VERSION;
-  }
-
-  function wireBadge() {
-    var badge = document.getElementById('version-badge');
-    if (!badge) return;
-    badge.classList.add('is-clickable');
-    badge.title = 'Comprobar actualizaciones';
-    badge.addEventListener('click', function () {
-      checkForUpdate().then(function (info) {
-        if (info && info.available) {
-          markOutdated(badge, info);
-          openModal({ version: info.latest, notes: info.notes });
-        } else {
-          var t = document.getElementById('toast');
-          if (t) {
-            t.textContent = 'Estás en la última versión (v' + CURRENT_VERSION + ')';
-            t.classList.add('show');
-            setTimeout(function () { t.classList.remove('show'); }, 2500);
-          }
-        }
-      });
+    var retry = document.getElementById('btn-update-retry');
+    if (retry) retry.addEventListener('click', function () { doDownloadFlow(); });
+    var manual = document.getElementById('btn-update-manual');
+    if (manual) manual.addEventListener('click', function () {
+      window.open('https://github.com/ElalChico/B-Chess-Desktop/releases/latest', '_blank');
     });
+  }
+
+  function doDownloadFlow() {
+    var desk = window.BCHESS_DESKTOP;
+    showUpdateScreen({ state: 'downloading', version: desk && desk.version ? (String(desk.version).replace(/^v/, '') || CURRENT_VERSION) : CURRENT_VERSION });
+    if (desk && typeof desk.downloadUpdate === 'function') desk.downloadUpdate();
   }
 
   // ---------- Electron: recibir eventos del main process ----------
@@ -175,50 +213,57 @@ window.BCHESS_UPDATE = (function () {
 
     desk.onUpdateAvailable && desk.onUpdateAvailable(function (info) {
       var ver = (info && info.version) || CURRENT_VERSION;
-      // Iniciar la descarga automáticamente; el modal muestra el progreso
-      openModal({ version: ver, notes: 'Descargando actualización v' + ver + '…', downloading: true, progress: 0 });
+      showUpdateScreen({ state: 'initial', version: ver });
       if (typeof desk.downloadUpdate === 'function') desk.downloadUpdate();
     });
-    desk.onUpdateDownloaded && desk.onUpdateDownloaded(function (info) {
-      openModal({ version: (info && info.version) || CURRENT_VERSION, downloaded: true, notes: 'Descarga completada. Reinicia para aplicar la actualización.' });
-    });
     desk.onUpdateProgress && desk.onUpdateProgress(function (p) {
-      if (p && typeof p.percent === 'number') setProgress(p.percent);
+      var pct = Number(p && p.percent) || 0;
+      setProgress(pct, Number(p && p.transferred) || 0, Number(p && p.total) || 0);
+    });
+    desk.onUpdateDownloaded && desk.onUpdateDownloaded(function (info) {
+      var ver = (info && info.version) || CURRENT_VERSION;
+      showUpdateScreen({ state: 'downloaded', version: ver });
     });
     desk.onUpdateError && desk.onUpdateError(function (err) {
-      // No cerrar el modal: mostrar el motivo y dejar que el usuario puede reintentar
-      var message = (err && err.message) ? err.message : String(err || 'error desconocido');
-      setError(message);
-      var modal = document.getElementById('update-modal');
-      if (modal) modal.classList.add('show');
+      showUpdateScreen({ state: 'error', version: (err && err.version) || CURRENT_VERSION, message: (err && err.message) || 'error desconocido' });
     });
     return true;
   }
 
   // ---------- Navegador: chequeo periódico al arrancar ----------
   function wireBrowserAutoCheck() {
-    var isElectron = !!(window.BCHESS_DESKTOP && window.BCHESS_DESKTOP.isElectron);
-    if (isElectron) return; // Electron maneja esto con autoUpdater
+    if (typeof window.BCHESS_DESKTOP !== 'undefined' && window.BCHESS_DESKTOP.isElectron) return;
     var t = setTimeout(function () {
       checkForUpdate().then(function (info) {
-        if (info && info.available) openModal({ version: info.latest, notes: info.notes });
+        if (info && info.available) showUpdateScreen({ state: 'initial', version: info.latest });
       });
     }, 1500);
     return function () { clearTimeout(t); };
   }
 
+  function wireBadge() {
+    var badge = document.getElementById('version-badge');
+    if (!badge) return;
+    badge.classList.add('is-clickable');
+    badge.title = 'Ver actualizaciones';
+    badge.addEventListener('click', function () {
+      window.BCHESS_UPDATE.showUpdateScreen && window.BCHESS_UPDATE.showUpdateScreen({ state: 'initial' });
+    });
+  }
+
   registerSW();
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
-      updateFooterBadge(); wireModalButtons(); wireElectronUpdater(); wireBrowserAutoCheck(); wireBadge();
+      renderReleaseNotes(); renderWarnings(); wireButtons(); wireElectronUpdater(); wireBrowserAutoCheck(); wireBadge();
     });
   } else {
-    updateFooterBadge(); wireModalButtons(); wireElectronUpdater(); wireBrowserAutoCheck(); wireBadge();
+    renderReleaseNotes(); renderWarnings(); wireButtons(); wireElectronUpdater(); wireBrowserAutoCheck(); wireBadge();
   }
 
   return {
     CURRENT_VERSION: CURRENT_VERSION,
     checkForUpdate: checkForUpdate,
-    applyUpdateNow: applyUpdateNow
+    applyUpdateNow: applyUpdateNow,
+    showUpdateScreen: showUpdateScreen
   };
 })();
