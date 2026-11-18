@@ -3383,7 +3383,9 @@
 
   function flipFenTurn(fen) {
     var parts = String(fen).split(' ');
-    parts[1] = (parts[1] === 'w') ? 'b' : 'w';
+    // Forzar siempre al color local: un premove es MI pieza, no la rival.
+    // Si la FEN ya está en mi turno, no hay que flipetar: si está en turno rival, sí.
+    parts[1] = S.localColor || 'w';
     parts[3] = '-'; // borra la flag en passant: la jugada del rival intermedia es desconocida
     return parts.join(' ');
   }

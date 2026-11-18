@@ -7,16 +7,16 @@
 window.BCHESS_UPDATE = (function () {
   'use strict';
 
-  var CURRENT_VERSION = '2.2.22';
+  var CURRENT_VERSION = '2.2.23';
   var REPO = 'ElalChico/B-Chess-Desktop';
   var CHECK_URL = 'https://api.github.com/repos/' + REPO + '/releases/latest';
 
-  // Notas de la versión v2.2.22 (editar en cada release)
+  // Notas de la versión v2.2.23 (editar en cada release)
   var RELEASE_NOTES = [
-    { type: 'fix', text: 'FIX CRITICO: desbalance de tags HTML en index.html (2 pares de </div> sobrantes tras borrado del modal de actualizacion) rompieron el parsing; Perfil, Historial y Estadisticas quedaron fuera de <main id=screens> y al pulsar sus botones se mostraba pantalla negra.' },
-    { type: 'fix', text: 'FIX CRITICO v2.2.21: preload aislado llamaba app.getVersion() sin estar disponible; bridge Electron moria y todas las pantallas quedaban oscuras.' },
-    { type: 'fix', text: 'Menú Electron cableado correctamente: BCHESS_DESKTOP expuesto via preload con fallback de version via IPC sincrono.' },
-    { type: 'feat', text: 'Premove encadenado completo con arrastre (desde v2.2.20).' }
+    { type: 'fix', text: 'Premove falla intermitentemente cuando el FEN ya estaba en turno local (tras mover la IA): flipFenTurn forzaba inadecuadamente el FEN al color opuesto; premoveLegal se rechazaba siempre que la FEN ya era turno local.' },
+    { type: 'fix', text: 'Cadenas de premoves tras turnos de la IA: ahora el FEN clonado siempre se fuerza al color local dentro de premoveLegal.' },
+    { type: 'feat', text: 'Premove encadenado completo con arrastre y Move Full funcional.' },
+    { type: 'feat', text: 'Pantalla dedicada de actualización con progreso y reintento funcional.' }
   ];
 
   var RELEASE_WARNINGS = [
