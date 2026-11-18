@@ -101,7 +101,7 @@
     settings: {
       name: 'Jugador', pieceSet: 'cburnett', boardTheme: 'lichess',
       sound: true, volume: 80, engine: 'stockfish', difficulty: 5, soundPack: 'gm', aiSpeed: 'fast', aiWinStreak: 0,
-      premoveStyle: 'chesscom',
+      premoveStyle: 'movefull', aiProgressEnabled: true,
       colorAI: 'r', clockAI: '300+0', colorOnline: 'r', clockOnline: '300+0',
       settingsVersion: 2, homeProfileSummary: true, historyCollapsed: false,
       premove: true,
@@ -187,6 +187,7 @@
   function toggleFullscreen() {
     var isFull = document.body.classList.toggle('fullscreen');
     // Ajustar tablero
+    if (isFull) document.body.classList.remove('full-board');
     if (S.hasBoard) renderBoard();
     syncGameLayout();
     showToast(isFull ? 'Pantalla completa activada' : 'Pantalla completa desactivada');
@@ -195,12 +196,19 @@
   // Sincroniza el ancho de las barras de reloj con el ancho real del tablero
   // (para que queden exactamente pegadas como en chess.com).
   function syncGameLayout() {
-    var board = S.hasBoard ? $('#board') : null;
-    var bw = board ? board.getBoundingClientRect().width : 0;
-    if (!bw) return;
-    var us = document.getElementById('card-us');
-    var them = document.getElementById('card-them');
-    [us, them].forEach(function (el) { if (el) el.style.width = bw + 'px'; });
+    var isFullBoard = document.body.classList.contains('full-board');
+    // En modo Tablero completo los relojes ya están columna izquierda; no forzar ancho
+    if (!isFullBoard) {
+      var board = S.hasBoard ? $('#board') : null;
+      var bw = board ? board.getBoundingClientRect().width : 0;
+      var us = document.getElementById('card-us');
+      var them = document.getElementById('card-them');
+      if (bw) [us, them].forEach(function (el) { if (el) el.style.width = bw + 'px'; });
+    } else {
+      var us = document.getElementById('card-us');
+      var them = document.getElementById('card-them');
+      [us, them].forEach(function (el) { if (el) el.style.width = ''; });
+    }
     var panel = document.getElementById('game-panel');
     if (panel && !document.querySelector('.game-wrap.panel-collapsed')) panel.style.height = '';
   }
@@ -467,16 +475,13 @@
     var moves = S.game.moves({ square: fromAlg, verbose: true });
     var move = null;
     for (var i = 0; i < moves.length; i++) if (moves[i].to === toAlg) { move = moves[i]; break; }
-    // Si el premove o la jugada cae es ilegal: descarta toda la cadena
     if (!move) { S.premoveQueue = []; return false; }
-
     if (move.promotion) {
       S.pendingPromotion = { from: from, to: to };
       showPromotionModal(move.color);
       return true;
     }
-    executeMove(from, to, null);
-    return true;
+    return executeMove(from, to, null);
   }
 
   function executeMove(from, to, promotion) {
@@ -542,12 +547,16 @@
 
     // Ejecutar cola de premoves si existe y ahora es nuestro turno
     if (S.premoveQueue.length > 0 && isLocalTurn() && !S.gameOver) {
-      // Pequeño delay para que se vea fluido
+      // Pequeño delay para que se vea fluido; la cola se ejecuta en cadena
       setTimeout(function() {
         if (S.gameOver || !isLocalTurn()) return;
-        var pm = S.premoveQueue.shift();
-        if (pm) {
-          // Si fue ilegal/ni se pudo hacer, la cadena queda descartada (ya se limpia en executeMove/makeMove)
+        // Ejecutamos en cadena (hasta 20) sin bloquear la transparencia de la UI;
+        // si una jugada se vuelve ilegal, executeMove/makeMove ya limpian la cola.
+        var guard = 0;
+        while (S.premoveQueue.length > 0 && isLocalTurn() && !S.gameOver && guard < 20) {
+          guard++;
+          var pm = S.premoveQueue[0];
+          S.premoveQueue.shift();
           if (pm.promotion) executeMove(pm.from, pm.to, pm.promotion);
           else makeMove(pm.from, pm.to);
         }
@@ -1803,6 +1812,16 @@
     return window.BCHESS_ENGINE ? window.BCHESS_ENGINE.ladder()[i - 1].label : 'Normal';
   }
 
+  // Sincroniza el toggle de modo progresivo
+  function syncProgressiveToggle() {
+    var t = $('#toggle-progressive');
+    if (!t) return;
+    var on = S.settings.aiProgressEnabled !== false;
+    t.textContent = on ? 'ON' : 'OFF';
+    t.classList.toggle('on', on);
+    t.setAttribute('aria-checked', on ? 'true' : 'false');
+  }
+
   // Sincroniza el slider/etiqueta de dificultad y la racha de progreso
   function renderSetupDifficulty() {
     var d = Math.max(1, Math.min(10, parseInt(S.settings.difficulty, 10) || 5));
@@ -1810,17 +1829,30 @@
     if (slider) slider.value = d;
     var label = $('#difficulty-value');
     if (label) label.textContent = difficultyLabel(d);
+    syncProgressiveToggle();
     var streakEl = $('#difficulty-streak');
     if (streakEl) {
       var streak = Math.max(0, Math.min(6, S.settings.aiWinStreak | 0));
-      if (d >= 10) streakEl.textContent = 'Dificultad máxima (≈3190). Racha actual: ' + streak + '/6.';
-      else streakEl.textContent = 'Racha vs IA: ' + streak + '/6 — gana 6 seguidas y sube sola la dificultad.';
+      var enabled = S.settings.aiProgressEnabled !== false;
+      if (!enabled) {
+        streakEl.textContent = 'Modo progresivo desactivado — la dificultad se mantiene como la elijas.';
+      } else if (d >= 10) {
+        streakEl.textContent = 'Dificultad máxima (≈3190). Racha actual: ' + streak + '/6.';
+      } else {
+        streakEl.textContent = 'Racha vs IA: ' + streak + '/6 — gana 6 seguidas y sube un peldaño.';
+      }
     }
   }
 
-  // Progreso automático: 6 victorias seguidas vs IA suben la dificultad un nivel
+  // Progreso automático: 6 victorias seguidas vs IA suben la dificultad un nivel (solo si está activado)
   function applyAIProgress(winner) {
     if (S.mode !== 'ai') return;
+    if (!S.settings.aiProgressEnabled) {
+      S.settings.aiWinStreak = 0;
+      saveSettings();
+      renderSetupDifficulty();
+      return;
+    }
     var localWon = !!(winner && winner === S.localColor);
     if (localWon) S.settings.aiWinStreak = (S.settings.aiWinStreak | 0) + 1;
     else S.settings.aiWinStreak = 0;
@@ -1915,7 +1947,7 @@
     syncSeg('#seg-color', S.settings.colorAI);
     syncSeg('#seg-color-online', S.settings.colorOnline);
     syncSeg('#seg-soundpack', S.settings.soundPack || 'gm');
-    syncSeg('#seg-premove-style', (S.settings && S.settings.premoveStyle) || 'chesscom');
+    syncSeg('#seg-premove-style', (S.settings && S.settings.premoveStyle) || 'movefull');
 
     var speedSel = $('#ai-speed');
     if (speedSel) speedSel.value = S.settings.aiSpeed || 'normal';
@@ -2288,13 +2320,37 @@
     $('#btn-setup-back').addEventListener('click', function () { setScreen('home'); });
     $('#btn-online-back').addEventListener('click', function () { setScreen('home'); });
     $('#btn-settings-back').addEventListener('click', function () { setScreen('home'); });
-    $('#btn-leave').addEventListener('click', function () { stopAutoPlay(); setScreen('home'); });
+
     $('#btn-lobby-back').addEventListener('click', function () { BCHESS_NET.cleanup(true); setScreen('online'); });
 
     // Pantalla completa durante la partida
     var btnFullscreenGame = $('#btn-fullscreen-game');
     if (btnFullscreenGame) btnFullscreenGame.addEventListener('click', function () {
       toggleFullscreen();
+    });
+
+    // Modo Tablero completo: reloj a la izquierda, tablero en grande, sin panel
+    var btnFullBoard = $('#btn-full-board');
+    var btnExitFullBoard = $('#btn-exit-full-board');
+    var updateExitBtn = function (active) {
+      if (btnExitFullBoard) btnExitFullBoard.classList.toggle('hidden', !active);
+      if (btnFullBoard) {
+        btnFullBoard.classList.toggle('on', active);
+        btnFullBoard.setAttribute('aria-pressed', active ? 'true' : 'false');
+      }
+    };
+    if (btnFullBoard) btnFullBoard.addEventListener('click', function () {
+      var active = !document.body.classList.contains('full-board');
+      document.body.classList.toggle('full-board', active);
+      updateExitBtn(active);
+      if (S.hasBoard) renderBoard();
+      syncGameLayout();
+    });
+    if (btnExitFullBoard) btnExitFullBoard.addEventListener('click', function () {
+      document.body.classList.remove('full-board');
+      updateExitBtn(false);
+      if (S.hasBoard) renderBoard();
+      syncGameLayout();
     });
 
     // Panel colapsable (movimientos): el tablero toma todo el espacio
@@ -2686,6 +2742,13 @@
     // Setup IA
     bindSeg('#seg-color', function (v) { S.settings.colorAI = v; saveSettings(); });
     bindClockControl('ai', 'clockAI');
+    var progressiva = $('#toggle-progressive');
+    if (progressiva) progressiva.addEventListener('click', function () {
+      S.settings.aiProgressEnabled = (S.settings.aiProgressEnabled === false);
+      // Restaurar racha cuando se activa
+      if (S.settings.aiProgressEnabled) S.settings.aiWinStreak = 0;
+      saveSettings(); renderSetupDifficulty(); renderSettingsUI();
+    });
     $('#difficulty').addEventListener('input', function () {
       S.settings.difficulty = parseInt(this.value, 10);
       // Cambiar la dificultad manualmente rompe la racha (las 6 son seguidas)
@@ -3207,7 +3270,7 @@
     var vg = viewGame();
     var atLive = isFullHistoryInView();
     var fenKey = S.fens[S.viewPly] || 'empty:' + S.viewPly;
-    var pmStyle = (S.settings && S.settings.premoveStyle) || 'chesscom';
+    var pmStyle = (S.settings && S.settings.premoveStyle) || 'movefull';
     var visualPieces = computeVisualPieces(vg);
     var pmSig = S.premoveQueue.map(pm => pm.from + '>' + (pm.to === null ? '_' : pm.to)).join('|') || 'none';
     var visualKey = fenKey + '::' + pmSig + '::' + pmStyle;
@@ -3247,8 +3310,8 @@
       }
 
       // Clases
-      var style = (S.settings && S.settings.premoveStyle) || 'chesscom';
-      setCellFlag(rec, 'style-chesscom', style === 'chesscom');
+      var style = (S.settings && S.settings.premoveStyle) || 'movefull';
+      setCellFlag(rec, 'style-movefull', style === 'movefull');
       setCellFlag(rec, 'style-gm2000', style === 'gm2000');
       var fromIdx = {}, toIdx = {};
       if (style !== 'atenuado') {

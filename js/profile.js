@@ -562,107 +562,224 @@ window.BCHESS_PROFILE = (function () {
     if (input) input.value = '';
   }
 
+  // ================= Perfil de oponente (modal pequeño + detallado) =================
+
+  function isStockfishName(str) {
+    var s = String(str == null ? '' : str).trim().toLowerCase();
+    return s === 'stockfish';
+  }
+
+  function computeWinLossDraw(games) {
+    var wins = 0, draws = 0, losses = 0;
+    (games || []).forEach(function (g) {
+      if (!g) return;
+      var r = g.myResult;
+      if (!r && g.res) {
+        if (g.res === '1/2-1/2') r = 'draw';
+        else if (g.res === '1-0') r = 'win';
+        else if (g.res === '0-1') r = 'loss';
+      }
+      if (r === 'win') wins++;
+      else if (r === 'draw') draws++;
+      else losses++;
+    });
+    var total = (games || []).length;
+    var winRate = total ? Math.round((wins / total) * 100) : 0;
+    return { total: total, wins: wins, draws: draws, losses: losses, winRate: winRate };
+  }
+
+  function statBlock(n, label, cls) {
+    return '<div class="stat ' + cls + '"><b>' + n + '</b><span>' + label + '</span></div>';
+  }
+
+  function renderStatsHtml(s) {
+    return (
+      statBlock(s.total, 'Partidas', 'total') +
+      statBlock(s.wins, 'Victorias', 'win') +
+      statBlock(s.draws, 'Tablas', 'draw') +
+      statBlock(s.losses, 'Derrotas', 'loss')
+    );
+  }
+
+  function renderDetailStatsHtml(s) {
+    return (
+      '<div class="opp-detail-stat win"><b>' + s.wins + '</b><span>Victorias</span></div>' +
+      '<div class="opp-detail-stat draw"><b>' + s.draws + '</b><span>Tablas</span></div>' +
+      '<div class="opp-detail-stat loss"><b>' + s.losses + '</b><span>Derrotas</span></div>' +
+      '<div class="opp-detail-stat"><b>' + s.winRate + '%</b><span>Win Rate</span></div>'
+    );
+  }
+
+  function renderDetailSummaryHtml(s, display) {
+    var fmt = function (label, val) {
+      return '<div class="opp-detail-row"><span>' + escapeHtml(label) + '</span><b>' + escapeHtml(String(val)) + '</b></div>';
+    };
+    return (
+      '<div class="opp-detail-summary">' +
+        fmt('Oponente', display) +
+        fmt('Partidas', s.total) +
+        fmt('Resultados', s.wins + 'V / ' + s.draws + 'T / ' + s.losses + 'D') +
+        fmt('Win Rate', s.winRate + '%') +
+      '</div>'
+    );
+  }
+
+  function sortGamesByDateDesc(games) {
+    return (games || []).slice().sort(function (a, b) {
+      var da = a && a.d ? new Date(a.d).getTime() : 0;
+      var db = b && b.d ? new Date(b.d).getTime() : 0;
+      return db - da;
+    });
+  }
+
+  function renderGamesListHtml(games) {
+    var recent = sortGamesByDateDesc(games).slice(0, 50);
+    if (!recent.length) {
+      return '<div class="opp-games-empty">Sin partidas registradas</div>';
+    }
+    return recent.map(function (g) {
+      var lw = g.lw === undefined ? null : (g.lw ? 'win' : 'loss');
+      if (g.res === '1/2-1/2') lw = 'draw';
+      var label = lw === 'win' ? 'V' : (lw === 'draw' ? 'T' : 'D');
+      var cls = lw === 'win' ? 'win' : (lw === 'draw' ? 'draw' : 'loss');
+      var date = '';
+      if (g.d) { try { date = new Date(g.d).toLocaleDateString('es', { day: '2-digit', month: 'short', year: '2-digit' }); } catch (e) {} }
+      var opp = String(g.opp || 'Rival');
+      var diff = g.dif ? String(g.dif) : '';
+      return '<div class="opp-game-row">' +
+        '<span class="opp-game-badge ' + cls + '">' + label + '</span>' +
+        '<span class="opp-game-info"><b>' + escapeHtml(opp) + '</b>' +
+          '<small>' + escapeHtml(String(g.t || '')) + (date ? ' · ' + escapeHtml(date) : '') + (diff ? ' · ' + escapeHtml(diff) : '') +
+            ' · ' + (parseInt(g.n, 10) || 0) + ' movs.</small>' +
+        '</span>' +
+        '<span class="opp-game-result">' + escapeHtml(String(g.res || '')) + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  function gameCardForBoard(record) {
+    record = record || {};
+    record.lw = record.myResult === 'win';
+    if (record.myResult === 'draw') record.lw = 'draw';
+    record.opp = record.opponentName || record.opp || 'Rival';
+    record.t = record.mode === 'online' ? 'En línea' : 'vs IA';
+    record.n = Array.isArray(record.movesSan) ? record.movesSan.length : (record.moves | 0) || 0;
+    record.res = record.result || '';
+    record.d = record.date || '';
+    record.dif = record.mode === 'ai' ? 'IA' : (record.mode === 'online' ? 'En línea' : '');
+    return record;
+  }
+
+  function setAvatarImage(el, photo, display) {
+    if (!el) return;
+    if (photo) {
+      el.style.backgroundImage = 'url("' + photo + '")';
+      el.textContent = '';
+      el.classList.add('has-photo');
+    } else {
+      el.style.backgroundImage = '';
+      el.textContent = String(display || 'R').charAt(0).toUpperCase();
+      el.classList.remove('has-photo');
+    }
+  }
+
+  function stockfishAvatarUrl() {
+    return 'assets/img/stockfish.png';
+  }
+
+  function wireOpponentDetailButton() {
+    var btn = document.getElementById('btn-opp-detail');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      var small = document.getElementById('opponent-profile-modal');
+      var detail = document.getElementById('opponent-detail-modal');
+      if (small) small.classList.remove('show');
+      if (detail) detail.classList.add('show');
+    });
+    var back = document.getElementById('btn-opp-detail-back');
+    if (back) {
+      back.addEventListener('click', function () {
+        var small = document.getElementById('opponent-profile-modal');
+        var detail = document.getElementById('opponent-detail-modal');
+        if (detail) detail.classList.remove('show');
+        if (small) small.classList.add('show');
+      });
+    }
+  }
+
+  function fillOpponentModals(display, photo, subtitle, games) {
+    var name = document.getElementById('opp-name');
+    var sub = document.getElementById('opp-sub');
+    var avatar = document.getElementById('opp-avatar');
+    var stats = document.getElementById('opp-stats');
+    var gamesList = document.getElementById('opp-games-list');
+    var btnDetail = document.getElementById('btn-opp-detail');
+
+    var dAvatar = document.getElementById('opp-detail-avatar');
+    var dName = document.getElementById('opp-detail-name');
+    var dSub = document.getElementById('opp-detail-sub');
+    var dStats = document.getElementById('opp-detail-stats');
+    var dGames = document.getElementById('opp-detail-games');
+    var dSummary = document.getElementById('opp-detail-summary');
+
+    if (name) name.textContent = display;
+    if (sub) sub.textContent = subtitle;
+    if (dName) dName.textContent = display;
+    if (dSub) dSub.textContent = subtitle;
+
+    setAvatarImage(avatar, photo, display);
+    setAvatarImage(dAvatar, photo, display);
+
+    var s = computeWinLossDraw(games);
+    if (stats) stats.innerHTML = renderStatsHtml(s);
+    if (dStats) dStats.innerHTML = renderDetailStatsHtml(s);
+    if (dSummary) dSummary.innerHTML = renderDetailSummaryHtml(s, display);
+    if (dGames) dGames.innerHTML = renderGamesListHtml((games || []).map(function (g) { return g && g.lw !== undefined ? g : gameCardForBoard(g); }));
+    if (gamesList) gamesList.innerHTML = renderGamesListHtml((games || []).map(function (g) { return g && g.lw !== undefined ? g : gameCardForBoard(g); }));
+
+    // "Ver perfil detallado" solo si NO es Stockfish
+    if (btnDetail) btnDetail.classList.toggle('hidden', isStockfishName(display));
+  }
+
   // ================= Perfil del rival (datos recibidos por red) =================
   function openOpponentProfileRemote(remote) {
     remote = remote || {};
     var display = String(remote.name || 'Rival').trim() || 'Rival';
-    var avatar = document.getElementById('opp-avatar');
-    if (avatar) {
-      if (remote.photo) {
-        avatar.style.backgroundImage = 'url("' + remote.photo + '")';
-        avatar.textContent = '';
-        avatar.classList.add('has-photo');
-      } else {
-        avatar.textContent = display.charAt(0).toUpperCase() || 'R';
-        avatar.style.backgroundImage = '';
-        avatar.classList.remove('has-photo');
-      }
-    }
-    var nameEl = document.getElementById('opp-name');
-    if (nameEl) nameEl.textContent = display;
-    var sub = document.getElementById('opp-sub');
-    if (sub) sub.textContent = 'Rival en línea';
-
-    var stats = document.getElementById('opp-stats');
-    var total = parseInt(remote.total, 10) || 0;
-    var wins = parseInt(remote.wins, 10) || 0;
-    var draws = parseInt(remote.draws, 10) || 0;
-    var losses = parseInt(remote.losses, 10) || 0;
-    var winRate = total ? Math.round((wins / total) * 100) : 0;
-    if (stats) {
-      stats.innerHTML =
-        '<div class="stat total"><b>' + total + '</b><span>Partidas</span></div>' +
-        '<div class="stat win"><b>' + wins + '</b><span>Victorias</span></div>' +
-        '<div class="stat draw"><b>' + draws + '</b><span>Tablas</span></div>' +
-        '<div class="stat loss"><b>' + losses + '</b><span>Derrotas</span></div>';
-    }
-
-    // Historial compartido por el rival (formato APK)
-    var listEl = document.getElementById('opp-games-list');
+    var photo = remote.photo || null;
+    // Determinar si el oponente es motor
+    var subtitle = /^stockfish$/i.test(display) ? 'Motor de ajedrez' : (remote.handle ? ('@' + remote.handle) : 'Rival en línea');
     var games = Array.isArray(remote.games) ? remote.games : [];
-    if (listEl) {
-      var recent = games.slice().reverse().slice(0, 20);
-      if (!recent.length) {
-        listEl.innerHTML = '<div class="opp-games-empty">Sin historial compartido</div>';
-      } else {
-        listEl.innerHTML = recent.map(function (g) {
-          var lw = g.lw === undefined ? null : (g.lw ? 'win' : 'loss');
-          if (g.res === '1/2-1/2') lw = 'draw';
-          var label = lw === 'win' ? 'V' : (lw === 'draw' ? 'T' : 'D');
-          var cls = lw === 'win' ? 'win' : (lw === 'draw' ? 'draw' : 'loss');
-          var date = '';
-          if (g.d) { try { date = new Date(g.d).toLocaleDateString('es', { day: '2-digit', month: 'short' }); } catch (e) {} }
-          var opp = String(g.opp || 'Rival');
-          return '<div class="opp-game-row">' +
-            '<span class="opp-game-badge ' + cls + '">' + label + '</span>' +
-            '<span class="opp-game-info"><b>' + escapeHtml(opp) + '</b>' +
-              '<small>' + escapeHtml(String(g.t || '')) + (date ? ' · ' + escapeHtml(date) : '') +
-                ' · ' + (parseInt(g.n, 10) || 0) + ' movs.</small>' +
-            '</span>' +
-            '<span class="opp-game-result">' + escapeHtml(String(g.res || '')) + '</span>' +
-          '</div>';
-        }).join('');
-      }
-    }
+    fillOpponentModals(display, photo, subtitle, games);
     var modal = document.getElementById('opponent-profile-modal');
     if (modal) modal.classList.add('show');
+    wireOpponentDetailButton();
   }
 
   function openOpponentProfile(name) {
     var display = String(name == null ? '' : name).trim() || 'Rival';
+    var isEngine = isStockfishName(display);
     var profile = getProfile();
-    var games = getGames().filter(function (g) {
-      return opponentName(g, profile) === display;
-    });
-    var wins = 0, draws = 0, losses = 0;
-    games.forEach(function (g) {
-      if (g.myResult === 'win') wins++;
-      else if (g.myResult === 'loss') losses++;
-      else draws++;
-    });
+    var games = getGames();
+    var hisGames = [];
 
-    var avatar = document.getElementById('opp-avatar');
-    if (avatar) {
-      avatar.textContent = display.charAt(0).toUpperCase() || 'R';
-      avatar.style.backgroundImage = '';
-      avatar.classList.remove('has-photo');
+    if (isEngine) {
+      // Todos los juegos vs IA (modo 'ai'), o vs Stockfish explícitamente
+      hisGames = games.filter(function (g) { return g.mode === 'ai'; });
+    } else {
+      hisGames = games.filter(function (g) {
+        if (!g) return false;
+        var opponent = g.localColor === 'w' ? g.black : g.white;
+        return String(opponent).trim() === display;
+      });
     }
-    var nameEl = document.getElementById('opp-name');
-    if (nameEl) nameEl.textContent = display;
-    var isEngine = /^stockfish$/i.test(display);
-    var sub = document.getElementById('opp-sub');
-    if (sub) sub.textContent = isEngine ? 'Motor de ajedrez' : 'Rival en línea';
 
-    var stats = document.getElementById('opp-stats');
-    if (stats) {
-      stats.innerHTML =
-        '<div class="stat total"><b>' + games.length + '</b><span>Partidas</span></div>' +
-        '<div class="stat win"><b>' + wins + '</b><span>Mis victorias</span></div>' +
-        '<div class="stat draw"><b>' + draws + '</b><span>Tablas</span></div>' +
-        '<div class="stat loss"><b>' + losses + '</b><span>Mis derrotas</span></div>';
-    }
+    // Foto: Stockfish → icono del motor; humano → null (sin foto conocida)
+    var photo = isEngine ? stockfishAvatarUrl() : null;
+    var subtitle = isEngine ? 'Motor de ajedrez' : 'Rival en línea';
+    fillOpponentModals(display, photo, subtitle, hisGames);
     var modal = document.getElementById('opponent-profile-modal');
     if (modal) modal.classList.add('show');
+    wireOpponentDetailButton();
   }
 
   // ================= Wiring =================

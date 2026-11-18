@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -9,8 +9,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/app.css?v=20261126">
-
+  <link rel="stylesheet" href="css/app.css?v=20261128">
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="js/vendor/chess.min.js"></script>
@@ -28,13 +27,9 @@
         <span class="top-profile-handle" id="top-profile-handle" data-dev="top-profile-handle">Elal_Chico</span>
       </button>
     </header>
-
     <div class="app-body">
-
       <nav id="side-rail" class="side-rail" data-dev="side-rail" aria-label="Navegación principal"></nav>
-
       <main id="screens">
-
         <!-- ============ HOME ============ -->
         <section id="screen-home" class="screen active" data-dev="screen-home">
           <div id="home-welcome" class="home-welcome" data-dev="home-welcome">
@@ -43,7 +38,6 @@
               <h1 class="home-title" data-dev="home-title">B-CHESS</h1>
               <p class="home-tagline">Ajedrez en el navegador, contra la IA o con un amigo.</p>
             </div>
-
             <div class="home-actions">
               <button id="btn-play-ai" class="home-act home-act-primary" data-dev="btn-play-ai">
                 <svg viewBox="0 0 24 24" width="34" height="34"><circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.9 1.9M16.6 16.6l1.9 1.9M18.5 5.5l-1.9 1.9M7.4 16.6l-1.9 1.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
@@ -54,31 +48,26 @@
                 <span class="home-act-label">Jugar en línea</span>
               </button>
             </div>
-
             <div class="home-chip-row">
               <span class="home-chip">♟ Stockfish</span>
               <span class="home-chip">♟ P2P con código</span>
               <span class="home-chip">♟ Historial local</span>
             </div>
-
             <div class="home-footer">
               <span id="home-conn-state" class="home-conn-state" data-dev="home-conn-state"><span class="conn-dot"></span>P2P desconectado</span>
-              <span id="version-badge" class="version-badge">B-Chess Desktop v2.2.16</span>
+              <span id="version-badge" class="version-badge">B-Chess Desktop v2.2.17</span>
               <button id="btn-settings-footer" class="icon-btn" title="Ajustes" aria-label="Ajustes" data-dev="btn-settings-footer">
                 <svg viewBox="0 0 24 24" width="16" height="16"><circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.8v2.6M12 18.6v2.6M2.8 12h2.6M18.6 12h2.6M5.5 5.5l1.9 1.9M16.6 16.6l1.9 1.9M18.5 5.5l-1.9 1.9M7.4 16.6l-1.9 1.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
               </button>
             </div>
           </div>
-
           <div id="home-quick-actions" class="home-quick-actions hidden" data-dev="home-quick-actions">
             <button id="btn-show-welcome" class="btn btn-ghost btn-small" title="Mostrar presentación">Mostrar presentación</button>
           </div>
         </section>
-
         <!-- ============ SETUP vs IA ============ -->
         <section id="screen-setup" class="screen" data-dev="screen-setup">
           <h2 class="screen-title" data-dev="setup-title">Partida vs IA</h2>
-
           <div class="form-block" data-dev="setup-color">
             <label class="form-label">Tu color</label>
             <div class="seg" id="seg-color">
@@ -87,13 +76,19 @@
               <button data-v="b">Negras</button>
             </div>
           </div>
+          <div class="form-block row" data-dev="setup-progressive">
+            <div>
+              <label class="form-label" for="toggle-progressive" style="margin-bottom:2px;">Modo progresivo</label>
+              <div class="muted" style="font-size:11px;max-width:260px;">Al ganar 6 partidas con la dificultad elegida, sube un peldaño. Si pierdes, se mantiene. Empieza siempre donde hayas dejado la dificultad.</div>
+            </div>
+            <button id="toggle-progressive" class="toggle on" role="switch" aria-checked="true">ON</button>
+          </div>
 
           <div class="form-block" data-dev="setup-difficulty">
             <label class="form-label" for="difficulty">Dificultad <b id="difficulty-value">Normal</b></label>
             <input id="difficulty" class="range" type="range" min="1" max="10" value="5">
-            <div class="muted" id="difficulty-streak" data-dev="difficulty-streak" style="font-size:11px;margin-top:6px;">Racha vs IA: 0/6 — gana 6 seguidas y sube sola.</div>
+            <div class="muted" id="difficulty-streak" data-dev="difficulty-streak" style="font-size:11px;margin-top:6px;">Racha vs IA: 0/6 — gana 6 seguidas y sube un peldaño</div>
           </div>
-
           <div class="form-block" data-dev="setup-clock">
             <label class="form-label" for="clock-ai">Reloj</label>
             <select id="clock-ai" class="select" data-dev="clock-ai">
@@ -121,7 +116,6 @@
               </div>
             </div>
           </div>
-
           <div class="form-block" data-dev="setup-speed">
             <label class="form-label" for="ai-speed">Velocidad de respuesta de la IA <b id="ai-speed-value">Normal</b></label>
             <select id="ai-speed" class="select" data-dev="ai-speed">
@@ -131,16 +125,13 @@
               <option value="slow">Pensativa · ~4 segundos</option>
             </select>
           </div>
-
           <button id="btn-start-ai" class="btn btn-primary btn-big" data-dev="btn-start-ai">Empezar partida</button>
           <button id="btn-setup-back" class="btn btn-ghost" data-dev="btn-setup-back">Volver</button>
         </section>
-
         <!-- ============ ONLINE (elegir conexión / crear / unirse) ============ -->
         <section id="screen-online" class="screen" data-dev="screen-online">
           <h2 class="screen-title" data-dev="online-title">Jugar en línea</h2>
           <p class="muted" data-dev="online-sub">Elige cómo conectas; cada vez solo uno puede estar activo.</p>
-
           <!-- Barra de estado: muestra qué conexión está en vivo (los botones de abajo solo eligen el modo) -->
           <div class="conn-status-bar" id="conn-status-bar" data-dev="conn-status-bar" role="status" aria-live="polite">
             <div class="conn-antenna" id="antenna-p2p" data-state="idle" data-dev="antenna-p2p" title="Estado de la conexión P2P (internet)">
@@ -160,7 +151,6 @@
               <span class="ant-dot" aria-hidden="true"></span>
             </div>
           </div>
-
           <div class="conn-modes" data-dev="conn-modes">
             <button class="conn-mode conn-mode-active" id="conn-mode-p2p" data-dev="conn-mode-p2p" title="Usar conexión P2P (internet, con código de sala)" aria-label="Conexión P2P">
               <svg viewBox="0 0 24 24" width="22" height="22"><path d="M2.5 9.5a14.5 14.5 0 0 1 19 0M5.5 13a10 10 0 0 1 13 0M8.5 16.5a5 5 0 0 1 7 0" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="20" r="1.3" fill="currentColor"/></svg>
@@ -173,7 +163,6 @@
               <span class="conn-mode-sub" id="conn-lan-state">Desconectado</span>
             </button>
           </div>
-
           <!-- P2P (modo por defecto) -->
           <div id="online-p2p" class="online-transport" data-dev="online-p2p">
             <div class="online-actions" data-dev="online-actions">
@@ -189,7 +178,6 @@
               </button>
             </div>
           </div>
-
           <!-- LAN (red local, TCP) -->
           <div id="online-lan" class="online-transport hidden" data-dev="online-lan">
             <p class="muted">Conexión directa por TCP en tu red local — compatible con PC↔PC y PC↔APK.</p>
@@ -205,7 +193,6 @@
                 <span class="online-tile-sub">Introduce IP del anfitrión</span>
               </button>
             </div>
-
             <div id="lan-host-panel" class="lan-panel hidden">
               <div class="form-block">
                 <label class="form-label">Puerto LAN</label>
@@ -218,7 +205,6 @@
               <p class="muted" style="font-size:12px;">El rival abre «Unirme (LAN)» e introduce esta dirección, p. ej. 192.168.1.50:5891</p>
               <button id="btn-lan-start" class="btn btn-primary btn-big" data-dev="btn-lan-start">Crear sala ahora</button>
             </div>
-
             <div id="lan-join-panel" class="lan-panel hidden">
               <p class="muted" style="font-size:12px;margin-bottom:8px;">El anfitrión te verá aparecer en cuanto conectes. Pídele su IP:puerto (la ve en su pantalla al crear la sala).</p>
               <div class="form-block">
@@ -232,7 +218,6 @@
               <button id="btn-lan-connect" class="btn btn-primary btn-big">Conectar</button>
             </div>
           </div>
-
           <div id="online-remote-card" class="online-remote-card hidden" data-dev="online-remote-card">
             <div class="online-remote-info" id="btn-online-remote-info" role="button" tabindex="0" aria-label="Ver perfil del rival">
               <div class="avatar online-remote-avatar" id="online-remote-avatar">R</div>
@@ -245,15 +230,12 @@
             </div>
             <button id="btn-online-view-remote" class="btn btn-small btn-secondary">Ver perfil</button>
           </div>
-
           <button id="btn-online-back" class="btn btn-ghost" data-dev="btn-online-back">Volver</button>
         </section>
-
         <!-- ============ CREAR SALA (configuración) ============ -->
         <section id="screen-create-room" class="screen" data-dev="screen-create-room">
           <h2 class="screen-title" data-dev="create-title">Crear sala</h2>
           <p class="muted" data-dev="create-sub">Configura la partida. Al crear se genera el código para compartir.</p>
-
           <div class="form-block" data-dev="create-mode">
             <label class="form-label">Modo</label>
             <div class="seg" id="seg-room-mode">
@@ -265,7 +247,6 @@
             <label class="form-label" for="room-rounds">Rondas del torneo</label>
             <input id="room-rounds" class="text-input" type="number" min="1" max="9" value="3" step="1">
           </div>
-
           <div class="form-block" data-dev="create-clock">
             <label class="form-label" for="clock-online">Reloj</label>
             <select id="clock-online" class="select" data-dev="clock-online">
@@ -293,7 +274,6 @@
               </div>
             </div>
           </div>
-
           <div class="form-block" data-dev="create-color">
             <label class="form-label">Color</label>
             <div class="seg" id="seg-color-online">
@@ -302,7 +282,6 @@
               <button data-v="b">Negras</button>
             </div>
           </div>
-
           <div class="form-block" data-dev="create-code">
             <label class="form-label">Código de la sala</label>
             <div class="code-switch-row" style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
@@ -324,26 +303,21 @@
             </div>
             <div class="muted create-code-hint">Vacío = código automático del sistema.</div>
           </div>
-
           <div id="create-status" class="online-status" data-dev="create-status"></div>
           <button id="btn-create-confirm" class="btn btn-primary btn-big" data-dev="btn-create-confirm">Crear</button>
           <button id="btn-create-back" class="btn btn-ghost" data-dev="btn-create-back">Volver</button>
         </section>
-
         <!-- ============ UNIRSE CON CÓDIGO ============ -->
         <section id="screen-join-room" class="screen" data-dev="screen-join-room">
           <h2 class="screen-title" data-dev="join-title">Unirme con código</h2>
           <p class="muted" data-dev="join-sub">Introduce los dígitos que te pasó el anfitrión.</p>
-
           <div class="form-block" data-dev="join-code">
             <label class="form-label" for="join-code">Código de la sala</label>
             <input id="join-code" class="text-input code-input" type="text" maxlength="12" placeholder="Ej: 4XKQ2A" autocomplete="off" spellcheck="false">
           </div>
-
           <button id="btn-join-confirm" class="btn btn-primary btn-big" data-dev="btn-join-confirm">Conectar</button>
           <button id="btn-join-back" class="btn btn-ghost" data-dev="btn-join-back">Volver</button>
         </section>
-
         <!-- ============ LOBBY (host configura / guest espera) ============ -->
         <section id="screen-lobby" class="screen" data-dev="screen-lobby">
           <h2 class="screen-title" data-dev="lobby-title">Sala <span id="lobby-code" class="accent">------</span><small id="lobby-code-hint" class="muted">— Código para compartir con tu rival</small><button id="btn-copy-lobby-code" class="icon-small copy-code-btn" title="Copiar código" aria-label="Copiar código"><svg viewBox="0 0 16 16"><rect x="2" y="2" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M6 2v2M2 6h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="6" y="6" width="10" height="10" rx="2" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></button></h2>
@@ -356,57 +330,45 @@
             </div>
             <button id="btn-lobby-view-rival" class="btn btn-small btn-ghost" title="Ver perfil del rival">Ver perfil</button>
           </div>
-
           <div id="lobby-config-summary" class="lobby-config-summary hidden" data-dev="lobby-config-summary"></div>
-
           <div class="lobby-quick-links" data-dev="lobby-quick-links">
             <button id="btn-lobby-history" class="btn btn-small btn-ghost" data-dev="btn-lobby-history">Mi historial</button>
             <button id="btn-lobby-profile" class="btn btn-small btn-ghost" data-dev="btn-lobby-profile">Mi perfil</button>
           </div>
-
           <div id="lobby-host-controls">
             <button id="btn-start-online" class="btn btn-primary btn-big" disabled data-dev="btn-start-online">Empezar partida</button>
           </div>
-
           <div id="lobby-guest-waiting" class="hidden">
             <div class="waiting-spinner"></div>
             <p class="muted">Esperando a que el anfitrión empiece…</p>
           </div>
-
           <button id="btn-lobby-back" class="btn btn-ghost" data-dev="btn-lobby-back">Cancelar sala</button>
         </section>
-
         <!-- ============ SETTINGS ============ -->
         <section id="screen-settings" class="screen" data-dev="screen-settings">
           <h2 class="screen-title" data-dev="settings-title">Ajustes</h2>
-
           <div class="settings-layout">
             <div class="settings-preview" data-dev="settings-preview">
               <div id="preview-board" class="preview-board"></div>
               <div class="preview-label">Vista previa</div>
             </div>
-
             <div class="settings-controls">
               <div class="form-block" data-dev="settings-pieces">
                 <label class="form-label">Conjunto de piezas</label>
                 <div id="piece-set-grid" class="piece-grid"></div>
               </div>
-
               <div class="form-block" data-dev="settings-themes">
                 <label class="form-label">Tema del tablero</label>
                 <div id="board-theme-grid" class="theme-grid"></div>
               </div>
-
               <div class="form-block row" data-dev="settings-sound">
                 <label class="form-label">Sonido</label>
                 <button id="toggle-sound" class="toggle on" role="switch" aria-checked="true">ON</button>
               </div>
-
               <div class="form-block" data-dev="settings-volume">
                 <label class="form-label" for="volume">Volumen</label>
                 <input id="volume" class="range" type="range" min="0" max="100" value="80">
               </div>
-
               <div class="form-block" data-dev="settings-soundpack">
                 <label class="form-label">Paquete de sonidos</label>
                 <div class="seg" id="seg-soundpack">
@@ -414,12 +376,10 @@
                   <button data-v="clasico">Clásico</button>
                 </div>
               </div>
-
               <div class="form-block" data-dev="settings-engine">
                 <label class="form-label">Motor de IA</label>
                 <div class="muted" style="font-size:12px;line-height:1.5;">Stockfish — fuerza ajustable desde ≈400 hasta 3190 Elo según la dificultad elegida.</div>
               </div>
-
               <div class="form-block" data-dev="settings-premove">
                 <div class="row" style="display:flex;justify-content:space-between;align-items:center;gap:12px;">
                   <label class="form-label">Premove (mover anticipado)</label>
@@ -430,32 +390,27 @@
                   <div class="seg" id="seg-premove-style" data-dev="seg-premove-style">
                     <button data-v="atenuado">Atenuado</button>
                     <button data-v="gm2000">GM-2000</button>
-                    <button data-v="chesscom" class="selected">Chess.com</button>
+                    <button data-v="movefull" class="selected">Move Full</button>
                   </div>
-                  <p class="muted" style="font-size:11px;margin:6px 0 0;">Atenuado: solo la pieza. GM-2000: casillas rojas claritas, sin marco. Chess.com: casillas rojas más marcadas.</p>
+                  <p class="muted" style="font-size:11px;margin:6px 0 0;">Atenuado: solo la ficha atenuada. GM-2000: casilla destino en rojo clarito sin marco. Move Full: la ficha se mueve al destino.</p>
                 </div>
               </div>
-
               <div class="form-block row" data-dev="settings-coordinates">
                 <label class="form-label">Coordenadas del tablero</label>
                 <button id="toggle-coordinates" class="toggle on" role="switch" aria-checked="true">ON</button>
               </div>
-
               <div class="form-block row" data-dev="settings-legal-moves">
                 <label class="form-label">Movimientos legales</label>
                 <button id="toggle-legal-moves" class="toggle on" role="switch" aria-checked="true">ON</button>
               </div>
-
               <div class="form-block row" data-dev="settings-check">
                 <label class="form-label">Indicación de jaque</label>
                 <button id="toggle-check" class="toggle on" role="switch" aria-checked="true">ON</button>
               </div>
-
               <div class="form-block row" data-dev="settings-last-move">
                 <label class="form-label">Último movimiento</label>
                 <button id="toggle-last-move" class="toggle on" role="switch" aria-checked="true">ON</button>
               </div>
-
               <div class="form-block privacy-card" data-dev="settings-privacy">
                 <label class="form-label">Privacidad (partidas en línea)</label>
                 <p class="privacy-note">Elige qué compartes con el rival conectado. Todo está activado por defecto; nada de esto te afecta si juegas vs IA.</p>
@@ -490,17 +445,21 @@
                   </div>
                 </div>
               </div>
-
               <div class="form-block" data-dev="settings-rail">
                 <label class="form-label">Barra lateral</label>
                 <button id="btn-settings-rail" class="btn btn-small" data-dev="btn-settings-rail">Personalizar barra</button>
               </div>
             </div>
           </div>
-
+          <div class="settings-footer" data-dev="settings-footer">
+            <div class="settings-signature">Creado por <span class="sig-name">s4møth</span> / <span class="sig-handle">Elal Chico</span></div>
+            <div class="settings-signature-buttons">
+              <a class="btn btn-small btn-ghost" href="https://github.com/ElalChico" target="_blank" rel="noopener noreferrer">GitHub</a>
+              <a class="btn btn-small btn-ghost" href="https://github.com/ElalChico/B-Chess-Desktop" target="_blank" rel="noopener noreferrer">Repositorio</a>
+            </div>
+          </div>
           <button id="btn-settings-back" class="btn btn-ghost" data-dev="btn-settings-back">Volver</button>
         </section>
-
         <!-- ============ GAME ============ -->
         <section id="screen-game" class="screen" data-dev="screen-game">
           <div class="game-wrap">
@@ -513,7 +472,6 @@
                 </div>
                 <div class="clock" id="clock-them" data-dev="clock-them">5:00</div>
               </button>
-
               <div class="board-column" data-dev="board-column">
                 <div class="board-frame" data-dev="board-frame">
                   <div id="board" class="board" data-dev="board"></div>
@@ -525,12 +483,10 @@
                   </div>
                 </div>
               </div>
-
               <!-- Asa/barb elegante para reabrir el panel colapsado (sin texto) -->
               <button id="btn-expand-panel" class="panel-expand-fab hidden" title="Mostrar panel de movimientos" aria-label="Mostrar panel de movimientos" data-dev="btn-expand-panel">
                 <svg viewBox="0 0 8 48" aria-hidden="true"><path d="M5 6v36M2.5 24h3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
               </button>
-
               <button class="player-bar" id="card-us" data-dev="card-us" aria-label="Ver mi perfil">
                 <div class="avatar" id="avatar-us">T</div>
                 <div class="player-info">
@@ -540,15 +496,11 @@
                 <div class="clock" id="clock-us" data-dev="clock-us">5:00</div>
               </button>
             </div>
-
             <aside class="game-panel" id="game-panel" data-dev="game-panel">
               <div class="panel-header">
                 <h3 id="game-title" data-dev="game-title">Partida</h3>
                 <div class="panel-header-right">
                   <div id="game-status" class="game-status" data-dev="game-status">Tu turno</div>
-                  <button id="btn-fullscreen-game" class="icon-small" title="Pantalla completa" aria-label="Pantalla completa" data-dev="btn-fullscreen-game">
-                    <svg viewBox="0 0 16 16"><path d="M3 3h3v3H3zM13 13h-3v-3h3zM3 13h3v-3H3zM13 3h3v3h-3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                  </button>
                   <button id="btn-collapse-panel" class="icon-small" title="Ocultar panel de movimientos" aria-label="Ocultar panel de movimientos" data-dev="btn-collapse-panel">
                     <svg viewBox="0 0 16 16"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
                   </button>
@@ -583,7 +535,8 @@
                 <button id="btn-offer-draw" class="btn btn-small" data-dev="btn-offer-draw">Tablas</button>
                 <button id="btn-resign" class="btn btn-small btn-danger" data-dev="btn-resign">Rendirse</button>
                 <button id="btn-new-game" class="btn btn-small" data-dev="btn-new-game">Nueva</button>
-                <button id="btn-leave" class="btn btn-small btn-ghost" data-dev="btn-leave">Menú</button>
+                <button id="btn-fullscreen-game" class="btn btn-small btn-ghost" title="Pantalla completa" aria-label="Pantalla completa" data-dev="btn-fullscreen-game">Pantalla completa</button>
+                <button id="btn-full-board" class="btn btn-small btn-ghost" title="Tablero completo" aria-label="Tablero completo" data-dev="btn-full-board">Tablero completo</button>
               </div>
               <div class="game-actions hidden" id="game-actions-review" data-dev="game-actions-review">
                 <button id="btn-copy-pgn" class="btn btn-small" data-dev="btn-copy-pgn">Copiar PGN</button>
@@ -592,7 +545,10 @@
               </div>
             </aside>
           </div>
-
+          <!-- Salida del modo Tablero completo (X flotante, solo visible en ese modo) -->
+          <button id="btn-exit-full-board" class="full-board-exit hidden" title="Salir del modo tablero completo" aria-label="Salir" data-dev="btn-exit-full-board">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 3l10 10M13 3L3 13" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </button>
           <!-- Promoción -->
           <div id="promotion-modal" class="modal" data-dev="promotion-modal">
             <div class="modal-content">
@@ -600,7 +556,6 @@
               <div id="promotion-options" class="promotion-options"></div>
             </div>
           </div>
-
           <!-- Tablas (oferta recibida) -->
           <div id="draw-modal" class="modal" data-dev="draw-modal">
             <div class="modal-content">
@@ -612,7 +567,6 @@
               </div>
             </div>
           </div>
-
           <!-- Fin de partida -->
           <div id="end-modal" class="modal" data-dev="end-modal">
             <div class="modal-content end-modal">
@@ -659,7 +613,6 @@
               <button id="btn-close-end-modal" class="btn btn-end-close" data-dev="btn-close-end-modal">Cerrar</button>
             </div>
           </div>
-
           <!-- Actualización disponible (estilo de la app) -->
           <div id="update-modal" class="modal" data-dev="update-modal" role="dialog" aria-modal="true" aria-labelledby="update-modal-title">
             <div class="modal-content end-modal">
@@ -684,7 +637,6 @@
             </div>
           </div>
         </section>
-
         <!-- ============ PROFILE (estilo Instagram) ============ -->
         <section id="screen-profile" class="screen profile-screen" data-dev="screen-profile">
           <div class="profile-card" data-dev="profile-card">
@@ -698,12 +650,10 @@
               <div class="profile-stats" id="profile-stats" data-dev="profile-stats"></div>
             </div>
           </div>
-
           <div class="profile-tabs" data-dev="profile-tabs">
             <button class="profile-tab active" id="profile-tab-games" data-dev="profile-tab-games">Partidas</button>
             <button class="profile-tab" id="profile-tab-stats" data-dev="profile-tab-stats">Estadísticas</button>
           </div>
-
           <div class="profile-filters-wrap">
             <div class="profile-filters" id="profile-filters" data-dev="profile-filters">
               <button data-f="all" class="selected">Todas</button>
@@ -725,9 +675,7 @@
               </button>
           </div>
           </div>
-
           <div id="profile-games-grid" class="games-grid" data-dev="profile-games-grid"></div><div id="profile-empty" class="profile-empty hidden" data-dev="profile-empty">Aún no hay partidas guardadas.<br>Juega una y aparecerá aquí.</div>
-
           <div id="profile-stats-panel" class="stats-panel hidden" data-dev="profile-stats-panel">
             <div class="chart-grid">
               <div class="chart-block" data-dev="chart-summary" data-chart="chart-summary">
@@ -785,7 +733,6 @@
             <button id="btn-reset-stats" class="btn btn-danger btn-small" style="margin-top:16px;" data-dev="btn-reset-stats">Reiniciar estadísticas y borrar historial</button>
           </div>
         </section>
-
         <!-- ============ HISTORY ============ -->
         <section id="screen-history" class="screen" data-dev="screen-history">
           <div class="history-header">
@@ -814,10 +761,8 @@
           <div id="history-grid" class="games-grid" data-dev="history-grid"></div>
           <div id="history-empty" class="profile-empty hidden" data-dev="history-empty">Aún no hay partidas guardadas.</div>
         </section>
-
       </main>
     </div>
-
     <div id="toast" class="toast" data-dev="toast"></div>
     <div id="conn-anim" class="conn-anim" data-dev="conn-anim" aria-hidden="true">
       <div class="conn-anim-card">
@@ -827,7 +772,6 @@
       </div>
     </div>
   </div>
-
   <!-- Editar perfil -->
   <div id="profile-edit-modal" class="modal" data-dev="profile-edit-modal">
     <div class="modal-content profile-edit">
@@ -851,7 +795,6 @@
       </div>
     </div>
   </div>
-
   <!-- Recortar foto de perfil -->
   <div id="avatar-cropper-modal" class="modal cropper-modal" data-dev="avatar-cropper-modal">
     <div class="modal-content">
@@ -870,7 +813,6 @@
       </div>
     </div>
   </div>
-
   <!-- Perfil del rival -->
   <div id="opponent-profile-modal" class="modal" data-dev="opponent-profile-modal">
     <div class="modal-content opponent-profile">
@@ -883,11 +825,39 @@
       <div class="opp-history-title">Historial de partidas</div>
       <div id="opp-games-list" class="opp-games-list" data-dev="opp-games-list"></div>
       <div class="modal-actions">
+        <button id="btn-opp-detail" class="btn btn-ghost hidden" data-dev="btn-opp-detail">Ver perfil detallado</button>
         <button id="opp-close" class="btn btn-primary" data-dev="opp-close">Cerrar</button>
       </div>
     </div>
   </div>
 
+  <!-- Perfil detallado del oponente (humano) -->
+  <div id="opponent-detail-modal" class="modal" data-dev="opponent-detail-modal" role="dialog" aria-modal="true" aria-labelledby="opp-detail-name">
+    <div class="modal-content opponent-detail-content">
+      <button id="btn-opp-detail-back" class="icon-btn opp-detail-back" title="Volver" aria-label="Volver" data-dev="btn-opp-detail-back">
+        <svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>Volver</span>
+      </button>
+      <div class="opponent-detail-head">
+        <div class="opponent-avatar big" id="opp-detail-avatar" data-dev="opp-detail-avatar">R</div>
+        <h2 id="opp-detail-name" data-dev="opp-detail-name">Rival</h2>
+        <div class="opponent-sub" id="opp-detail-sub" data-dev="opp-detail-sub">Rival en línea</div>
+      </div>
+      <div class="opponent-detail-stats" id="opp-detail-stats" data-dev="opp-detail-stats"></div>
+      <div class="opponent-detail-grid">
+        <div class="opp-detail-panel">
+          <div class="opponent-sub">Resumen</div>
+          <div id="opp-detail-summary" class="opp-detail-summary"></div>
+        </div>
+        <div class="opp-detail-panel">
+          <div class="opponent-sub">Jugadas recientes</div>
+          <div id="opp-detail-games" class="opp-games-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+    </div>
+  </div>
   <!-- Personalizar barra -->
   <div id="rail-modal" class="modal" data-dev="rail-modal">
     <div class="modal-content rail-edit">
@@ -900,7 +870,6 @@
       </div>
     </div>
   </div>
-
   <!-- Partida guardada -->
   <div id="saved-game-modal" class="modal" data-dev="saved-game-modal">
     <div class="modal-content saved-game">
@@ -919,7 +888,6 @@
       </div>
     </div>
   </div>
-
   <div id="chart-expand-modal" class="modal chart-expand-modal" data-dev="chart-expand-modal">
     <div class="modal-content chart-expand-content">
       <div class="chart-expand-head">
@@ -932,17 +900,16 @@
       <div id="chart-expand-body" class="chart chart-expand-body"></div>
     </div>
   </div>
-
-  <script src="js/firebase-config.js?v=20261126"></script>
-  <script src="js/pieces.js?v=20261126"></script>
-  <script src="js/sounds.js?v=20261126"></script>
-  <script src="js/engine.js?v=20261126"></script>
-  <script src="js/net.js?v=20261126"></script>
-  <script src="js/lan.js?v=20261126"></script>
-  <script src="js/profile.js?v=20261126"></script>
-  <script src="js/stats.js?v=20261126"></script>
-  <script src="js/inspector.js?v=20261126"></script>
-  <script src="js/app.js?v=20261126"></script>
-  <script src="js/update.js?v=20261126"></script>
+  <script src="js/firebase-config.js?v=20261128"></script>
+  <script src="js/pieces.js?v=20261128"></script>
+  <script src="js/sounds.js?v=20261128"></script>
+  <script src="js/engine.js?v=20261128"></script>
+  <script src="js/net.js?v=20261128"></script>
+  <script src="js/lan.js?v=20261128"></script>
+  <script src="js/profile.js?v=20261128"></script>
+  <script src="js/stats.js?v=20261128"></script>
+  <script src="js/inspector.js?v=20261128"></script>
+  <script src="js/app.js?v=20261128"></script>
+  <script src="js/update.js?v=20261128"></script>
 </body>
 </html>
